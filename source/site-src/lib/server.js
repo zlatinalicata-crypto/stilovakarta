@@ -1,0 +1,63 @@
+/* The two endpoints: /api/report and /api/checkout. */
+const DATA = require('./data.js');
+global.DATA = DATA;
+const Engine = require('./engine.js');
+const Pal = require('./palette.js');
+const makeReport = require('./report.js');
+const pay = require('./pay.js');
+
+const R = makeReport(DATA, Pal, Engine);
+const NOTES = {
+  mismatch: 'Плащането е за други данни. Върни данните, с които плати, или отключи този резултат отделно.',
+  unpaid: 'Плащането още не е потвърдено. Опитай отново след минута.',
+  unknown: 'Не намирам това плащане. Ако плащането е минало, пиши ни и ще помогнем.'
+};
+
+function json(code, obj) {
+  return { statusCode: code, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }, body: JSON.stringify(obj) };
+}
+function parse(event) {
+  if (event.httpMethod !== 'POST') return null;
+  try {
+    const raw = event.isBase64Encoded ? Buffer.from(event.body || '', 'base64').toString('utf8') : (event.body || '{}');
+    if (raw.length > 20000) return null;
+    return JSON.parse(raw);
+  } catch (e) { return null; }
+}
+
+async function report(event) {
+  const body = parse(event);
+  if (!body) return json(400, { error: 'Невалидна заявка.' });
+  const inp = R.clean(body.input);
+  const bad = R.invalid(inp);
+  if (bad) return json(400, { error: bad });
+  const h = pay.hash(R.key(inp));
+  const testMode = process.env.TEST_MODE === '1';
+  let paid = false, note = null;
+  if (body.session) {
+    const r = await pay.isPaid(body.session, h);
+    paid = r.paid;
+    note = r.note ? NOTES[r.note] : null;
+  }
+  const out = { teaser: R.teaser(inp), full: null, paid, testMode, note };
+  if (paid || (testMode && body.preview)) out.full = R.full(inp);
+  return json(200, out);
+}
+
+async function checkout(event) {
+  const body = parse(event);
+  if (!body) return json(400, { error: 'Невалидна заявка.' });
+  if (body.consent !== true) return json(400, { error: 'Потвърди съгласието си, за да продължиш.' });
+  const inp = R.clean(body.input);
+  const bad = R.invalid(inp);
+  if (bad) return json(400, { error: bad });
+  const origin = (process.env.SITE_URL || process.env.URL || ('https://' + ((event.headers || {}).host || ''))).replace(/\/$/, '');
+  try {
+    return json(200, await pay.createCheckout(pay.hash(R.key(inp)), origin));
+  } catch (e) {
+    const nc = e.code === 'not_configured';
+    return json(nc ? 503 : 502, { error: nc ? 'Плащането още не е настроено.' : 'Плащането не можа да започне. Опитай отново след малко.' });
+  }
+}
+
+module.exports = { report, checkout };

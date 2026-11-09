@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Поверителност · Стилова карта</title>
+<meta name="theme-color" content="#6E1F3B">
+<link rel="icon" href="icons/favicon-64.png">
+<style>
+:root{--bg:#F3F1F4;--ink:#1C1A20;--muted:#68626F;--accent:#6E1F3B;--mark:#FCEFC7}
+@media (prefers-color-scheme: dark){:root{--bg:#141218;--ink:#EEEAF2;--muted:#A39DAC;--accent:#E294AF;--mark:#4A3B12;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:720px;margin:0 auto;padding:32px 16px 64px;display:flex;flex-direction:column;gap:12px}
+h1{font-family:Georgia,serif;font-weight:400;font-size:2rem;margin:0}
+h2{font-size:1.05rem;margin:16px 0 0}
+p,ul{margin:0}
+li{margin:4px 0}
+.muted{color:var(--muted);font-size:.9rem}
+.fill{background:var(--mark);padding:0 4px;border-radius:2px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+<p><a href="./">← Към Стилова карта</a></p>
+<h1>Поверителност</h1>
+<p class="muted">В сила от <span class="fill">[дата на пускане]</span></p>
+
+<h2>Кой отговаря за данните</h2>
+<p><span class="fill">[име или фирма]</span>, ЕИК/БУЛСТАТ <span class="fill">[номер]</span>, <span class="fill">[адрес]</span>, имейл <span class="fill">[имейл]</span>.</p>
+
+<h2>Какво въвеждаш</h2>
+<ul>
+<li>пол, дата, час и място на раждане;</li>
+<li>отговорите на въпросите и избрания цветови сезон, линия и архетип.</li>
+</ul>
+
+<h2>Защо и как</h2>
+<p>Данните се изпращат към сървъра само за да се изчисли резултатът ти. Не ги записваме в база данни и не правим профил за теб. Отговорите и резултатът се пазят в паметта на браузъра на твоето устройство, за да не започваш отначало.</p>
+<p>Основанието е договорът: без тези данни не можем да изчислим резултата.</p>
+
+<h2>Снимката</h2>
+<p>Снимката се обработва само на твоето устройство и не се качва никъде. Пази се само измереният цветови сезон.</p>
+
+<h2>Плащането</h2>
+<p>Плащането минава през Stripe. Stripe обработва данните на картата и имейла ти по своите правила за поверителност (stripe.com/privacy). Ние виждаме само дали плащането е успешно, сумата и имейла, ако го въведеш.</p>
+
+<h2>Хостинг</h2>
+<p>Сайтът работи на сървърите на Netlify. Като всеки хостинг, той записва технически данни, като IP адрес и време на заявката, за сигурност и отстраняване на грешки.</p>
+
+<h2>Бисквитки</h2>
+<p>Нямаме реклами и бисквитки за проследяване.</p>
+
+<h2>Твоите права</h2>
+<p>Можеш да поискаш достъп, поправка или изтриване на данни, свързани с теб, на <span class="fill">[имейл]</span>. Данните в браузъра изтриваш сама или сам с „Изтрий и започни отначало“ или от настройките на браузъра. Можеш да подадеш жалба до Комисията за защита на личните данни (cpdp.bg).</p>
+
+<p class="muted">Шаблон за преглед от юрист преди пускане. Маркираните полета трябва да се попълнят.</p>
+</main>
+</body>
+</html>
