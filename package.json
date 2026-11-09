@@ -1,0 +1,15 @@
+{
+  "name": "stilovakarta",
+  "private": true,
+  "description": "Стилова карта: лична палитра",
+  "scripts": {
+    "dev": "MOCK_STRIPE=1 TEST_MODE=1 node tools/dev-server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "astronomy-engine": "2.1.19",
+    "stripe": "23.1.0"
+  }
+}
