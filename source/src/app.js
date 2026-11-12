@@ -11,7 +11,13 @@
   /* Price and checkout. checkoutReady stays false until payments are connected: then the full result needs a paid order. */
   var IS_SITE = window.__SITE__ === true;
   var LOCAL = typeof makeReport !== 'undefined' && typeof Pal !== 'undefined';
-  var CONFIG = { price: '4,99 €', checkoutReady: IS_SITE };
+  /* Introductory price until promoUntil (inclusive), then the regular price. Keep in step with lib/pay.js. */
+  var CONFIG = { promo: '4,99 €', regular: '19,99 €', promoUntil: '2027-02-28', checkoutReady: IS_SITE };
+  function promoOn() { return new Date().toISOString().slice(0, 10) <= CONFIG.promoUntil; }
+  function priceNow() { return promoOn() ? CONFIG.promo : CONFIG.regular; }
+  function promoDate() { return CONFIG.promoUntil.split('-').reverse().join('.'); }
+  function priceTag() { return promoOn() ? CONFIG.promo + ' <s>' + CONFIG.regular + '</s>' : CONFIG.regular; }
+  function promoLine() { return promoOn() ? 'Въвеждаща цена до ' + promoDate() + '. След това цената е ' + CONFIG.regular + '.' : ''; }
   function gx(v) { return Array.isArray(v) ? (st.sex === 'm' ? v[1] : v[0]) : v; }
   function gf(f, m) { return st.sex === 'm' ? m : f; }
   function arch(k) { var a = D.ARCH[k]; if (!a) return null; return st.sex === 'm' && a.m ? Object.assign({}, a, a.m) : a; }
@@ -88,7 +94,7 @@
       '<button type="button" class="chip" data-act="sex" data-v="f" aria-pressed="' + (st.sex === 'f') + '">Жена</button>' +
       '<button type="button" class="chip" data-act="sex" data-v="m" aria-pressed="' + (st.sex === 'm') + '">Мъж</button></div>' +
       '<p class="small">Изборът сменя формите в текстовете и архетипите, а е нужен и за числото Гуа.</p></div>' +
-      '<div class="price"><b>' + CONFIG.price + '</b><span>Тестовете и кратък преглед на резултата са безплатни. Пълният резултат струва ' + CONFIG.price + ', еднократно.</span></div>' +
+      '<div class="price"><b>' + priceTag() + '</b><span>Тестовете и кратък преглед на резултата са безплатни. Пълният резултат струва ' + priceNow() + ', еднократно. ' + promoLine() + '</span></div>' +
       '<div class="row"><button class="btn primary" data-act="start"' + (st.sex ? '' : ' disabled') + '>' + (has ? 'Започни отначало' : 'Започни') + '</button>' + (has ? '<button class="btn" data-act="go" data-v="result">Виж резултата си</button>' : '') + '<span class="meta">4 стъпки · около 10 минути</span></div>' + (st.sex ? '' : '<p class="small">Избери „Жена“ или „Мъж“, за да започнеш.</p>') + '</header>' +
       '<div class="strips" aria-hidden="true">' + strips + '</div>' +
       '<ol class="plan">' +
@@ -398,7 +404,7 @@
     var consent = '';
     if (CONFIG.checkoutReady) consent = '<label class="check consent" for="consent"><input type="checkbox" id="consent"' + (mem.consent ? ' checked' : '') + '> <span>' +
       gf('Съгласна', 'Съгласен') + ' съм резултатът да ми бъде предоставен веднага след плащането и знам, че така губя правото си на отказ от покупката. Приемам <a href="terms.html" target="_blank" rel="noopener">Общите условия</a>.</span></label>';
-    return '<div class="card hl pay"><p class="eyebrow">Пълен резултат</p><p class="pay-price">' + CONFIG.price + '</p><p class="small">Еднократно плащане с карта. Резултатът се отваря веднага след плащането.</p>' +
+    return '<div class="card hl pay"><p class="eyebrow">Пълен резултат</p><p class="pay-price">' + priceTag() + '</p><p class="small">' + promoLine() + ' Еднократно плащане с карта. Резултатът се отваря веднага след плащането.</p>' +
       consent + '<div class="row"><button class="btn primary" data-act="pay"' + (CONFIG.checkoutReady && !mem.consent || mem.paying ? ' disabled' : '') + '>' + (mem.paying ? 'Отварям плащането…' : 'Отключи пълния резултат') + '</button></div>' +
       (mem.payNote ? '<p class="small" role="status">' + esc(mem.payNote) + '</p>' : '') +
       (R.testMode ? '<button class="link" data-act="preview">Тестов режим: виж пълния резултат без плащане</button>' : '') + '</div>';

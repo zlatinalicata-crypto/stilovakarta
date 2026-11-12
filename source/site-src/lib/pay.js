@@ -14,7 +14,9 @@ async function createCheckout(h, origin) {
   if (mock()) return { url: origin + '/?session_id=mock_paid_' + h };
   const stripe = client();
   if (!stripe) { const e = new Error('Stripe key missing'); e.code = 'not_configured'; throw e; }
-  const cents = parseInt(process.env.PRICE_CENTS || '499', 10);
+  /* Introductory price until PROMO_UNTIL (inclusive), then the regular price. Keep in step with CONFIG in the page. */
+  const promoOn = new Date().toISOString().slice(0, 10) <= (process.env.PROMO_UNTIL || '2027-02-28');
+  const cents = parseInt(promoOn ? (process.env.PROMO_CENTS || '499') : (process.env.PRICE_CENTS || '1999'), 10);
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     line_items: [{ quantity: 1, price_data: { currency: 'eur', unit_amount: cents, product_data: { name: 'Стилова карта: пълен резултат' } } }],
