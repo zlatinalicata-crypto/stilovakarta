@@ -375,7 +375,7 @@
     return { sex: st.sex, birth: st.birth, season: { value: st.season.value, sub: st.season.sub, src: st.season.src },
       line: { value: st.line.value }, arch: { primary: st.arch.primary, secondary: st.arch.secondary } };
   }
-  var localReport = LOCAL ? makeReport(DATA, Pal, Engine) : null;
+  var localReport = LOCAL ? makeReport(DATA, Pal, Engine, Figure) : null;
   /* Gets the preview, and the full report when it is paid for (or in test mode). */
   function loadReport() {
     var inp = inputOf(), key = JSON.stringify([inp, st.session || null, !!mem.preview]);
@@ -501,7 +501,7 @@
     }
     else if (a === 'aknow') { st.arch.pick = true; save(); render(); }
     else if (a === 'aredo') { st.arch = fresh().arch; save(); render(); }
-    else if (a === 'goto') { var el = document.getElementById(b.dataset.id); if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }
+    else if (a === 'goto') { var el = document.getElementById(b.dataset.id); if (el && el.tagName === 'DETAILS') el.open = true; if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }
     else if (a === 'copy') {
       var txt = mem.rep && mem.rep.full ? mem.rep.full.text : '';
       var ok = function () { mem.toast = 'Копирано. Можеш да го поставиш в бележка или съобщение.'; render(); var d = document.getElementById('data'); if (d) d.scrollIntoView(); };

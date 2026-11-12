@@ -15,7 +15,7 @@ art = shell.replace('<!--HEAD-->', '''<link rel="preconnect" href="https://fonts
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Prata&display=swap">''')
 art = art.replace('<!--ASTRO-->', '<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>')
-art = art.replace('/*__SCRIPTS__*/', '\n'.join(read(f) for f in ['engine.js', 'data.js', 'palette.js', 'scoring.js', 'report.js', 'app.js']))
+art = art.replace('/*__SCRIPTS__*/', '\n'.join(read(f) for f in ['engine.js', 'data.js', 'palette.js', 'scoring.js', 'figure.js', 'report.js', 'app.js']))
 (ROOT / 'dist').mkdir(exist_ok=True)
 (ROOT / 'dist' / 'index.html').write_text(art)
 
@@ -90,7 +90,7 @@ for a in assets[1:]:
 (pub / 'sw.js').write_text((SRC / 'sw.js').read_text().replace('__VERSION__', h.hexdigest()[:10]).replace('__ASSETS__', json.dumps(assets)))
 
 (out / 'lib').mkdir()
-for f in ['engine.js', 'data.js', 'palette.js', 'report.js']:
+for f in ['engine.js', 'data.js', 'palette.js', 'figure.js', 'report.js']:
     shutil.copy(SRC / f, out / 'lib' / f)
 for f in ['lib/pay.js', 'lib/server.js', 'netlify/functions/report.js', 'netlify/functions/checkout.js', 'netlify.toml', 'tools/dev-server.js', 'README.md']:
     (out / f).parent.mkdir(parents=True, exist_ok=True)

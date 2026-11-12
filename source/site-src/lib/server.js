@@ -6,7 +6,8 @@ const Pal = require('./palette.js');
 const makeReport = require('./report.js');
 const pay = require('./pay.js');
 
-const R = makeReport(DATA, Pal, Engine);
+const Figure = require('./figure.js');
+const R = makeReport(DATA, Pal, Engine, Figure);
 const NOTES = {
   mismatch: 'Плащането е за други данни. Върни данните, с които плати, или отключи този резултат отделно.',
   unpaid: 'Плащането още не е потвърдено. Опитай отново след минута.',
