@@ -113,7 +113,6 @@
       '<li><div><b>Линия</b><span>Дванадесет въпроса с рисунки за фигурата и лицето.</span></div></li>' +
       '<li><div><b>Архетип</b><span>Девет въпроса за това какво излъчваш.</span></div></li>' +
       '</ol><p class="note">Отговорите се пазят само на това устройство. Снимката не се запазва.' + (IS_SITE ? ' <a href="terms.html">Общи условия</a> · <a href="privacy.html">Поверителност</a>' : '') + '</p></section>' +
-      installCard() +
       '<section class="sec startbox" id="start"><div class="sec-head"><h2 class="h-l">Започни</h2></div>' +
       '<div class="field"><span class="lbl">Ти си</span><div class="chips" role="group" aria-label="Пол">' +
       '<button type="button" class="chip" data-act="sex" data-v="f" aria-pressed="' + (st.sex === 'f') + '">Жена</button>' +
