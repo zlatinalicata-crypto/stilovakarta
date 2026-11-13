@@ -15,7 +15,7 @@ art = shell.replace('<!--HEAD-->', '''<link rel="preconnect" href="https://fonts
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Prata&display=swap">''')
 art = art.replace('<!--ASTRO-->', '<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>')
-art = art.replace('/*__SCRIPTS__*/', '\n'.join(read(f) for f in ['engine.js', 'data.js', 'palette.js', 'scoring.js', 'figure.js', 'report.js', 'app.js']))
+art = art.replace('/*__SCRIPTS__*/', '\n'.join(read(f) for f in ['engine.js', 'data.js', 'palette.js', 'scoring.js', 'figure.js', 'report.js', 'icons.js', 'app.js']))
 (ROOT / 'dist').mkdir(exist_ok=True)
 (ROOT / 'dist' / 'index.html').write_text(art)
 
@@ -53,7 +53,7 @@ for fam, pkg, weights in [('Prata', 'prata', [400]), ('Onest', 'onest', [400, 50
             shutil.copy(fs / pkg / 'files' / name, pub / 'fonts' / name)
             faces.append('@font-face{font-family:"%s";font-style:normal;font-weight:%d;font-display:swap;src:url(fonts/%s) format("woff2");unicode-range:%s}' % (fam, w, name, rng))
 
-head = '''<meta name="theme-color" content="#6E1F3B">
+head = '''<meta name="theme-color" content="#16131A">
 <meta name="description" content="Лична палитра от цветовия сезон, линията на тялото, стиловия архетип и рождената карта.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/favicon-64.png" type="image/png">
@@ -64,7 +64,7 @@ head = '''<meta name="theme-color" content="#6E1F3B">
 <script>window.__PWA__=true;window.__SITE__=true</script>
 <style>%s</style>''' % '\n'.join(faces)
 site_html = shell.replace('<!--HEAD-->', head).replace('<!--ASTRO-->', '')
-site_html = site_html.replace('/*__SCRIPTS__*/', pubdata + '\n' + read('scoring.js') + '\n' + read('app.js'))
+site_html = site_html.replace('/*__SCRIPTS__*/', pubdata + '\n' + read('scoring.js') + '\n' + read('icons.js') + '\n' + read('app.js'))
 (pub / 'index.html').write_text(site_html)
 
 today = datetime.date.today().strftime('%d.%m.%Y')
@@ -76,7 +76,7 @@ manifest = {
     'name': 'Стилова карта', 'short_name': 'Стилова карта',
     'description': 'Лична палитра от цветовия сезон, линията на тялото, стиловия архетип и рождената карта.',
     'lang': 'bg', 'dir': 'ltr', 'id': '/', 'start_url': '/', 'scope': '/', 'display': 'standalone', 'orientation': 'portrait',
-    'background_color': '#F3F1F4', 'theme_color': '#6E1F3B', 'categories': ['lifestyle', 'personalization'],
+    'background_color': '#F1EFEA', 'theme_color': '#16131A', 'categories': ['lifestyle', 'personalization'],
     'icons': [{'src': 'icons/icon-192.png', 'sizes': '192x192', 'type': 'image/png', 'purpose': 'any'},
               {'src': 'icons/icon-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'},
               {'src': 'icons/maskable-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'}]

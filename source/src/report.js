@@ -215,6 +215,9 @@ var makeReport = function (D, P, E, F) {
       '<div><dt>Акцент</dt><dd>' + d3(p.accent) + '<small>по един на визия</small></dd></div>' +
       '<div><dt>Силует</dt><dd>' + L.plus.slice(0, 2).map(gx).join('. ') + '.</dd></div>' +
       '<div><dt>Бижута</dt><dd>' + dots([jewelC]) + '</dd></div>' +
+      '<div><dt>Метал</dt><dd>' + cap(p.S.metal) + ' озарява лицето ти' + (p.metalTier === 'light' || p.metalTier === 'avoid' ? ', но по картата го носи само като тънък обков' : '') + '.</dd></div>' +
+      '<div><dt>Твоето бяло</dt><dd>' + cap(p.S.white) + '.</dd></div>' +
+      '<div><dt>Уморяват те</dt><dd>' + cap(p.S.tired) + '.</dd></div>' +
       (reps.length ? '<div><dt>Остави</dt><dd>' + cap(reps.join(', ')) + '.</dd></div>' : '') + '</dl>';
 
     return open('brief', 'Накратко', null, brief) +
@@ -240,12 +243,12 @@ var makeReport = function (D, P, E, F) {
     var strip = [p.base[0], p.base[1], p.face[0], p.face[1], p.accent[0], p.accent[1], p.accent[2]].filter(Boolean);
     rows.push(['Палитра', '<span class="tstrip" role="img" aria-label="Част от палитрата">' + strip.map(function (c) { return '<i style="background:' + c.hex + '"></i>'; }).join('') + '</span>',
       bz ? 'Претеглена по Ба Дзъ: подсилват ' + bz.fav.map(function (e) { return lc(ELN[e]); }).join(' и ') + '.' : 'Подредена по сезона.']);
-    if (hd) rows.push(['Хюман дизайн', D.HD_TYPE[hd.type].name + ', профил ' + hd.profile, D.HD_AUTH[hd.authority].name + ' авторитет.']);
     if (bz) rows.push(['Ба Дзъ', 'Господар на деня ' + E.STEMS[bz.dmStem] + ', ' + (bz.dmStem % 2 ? 'Ин' : 'Ян') + ' ' + ELN[bz.dm], bz.strong ? 'Силен господар.' : 'Слаб господар.']);
-    if (ch) rows.push(['Рождена карта', 'Слънце ' + v(ch.west.sun.name) + (ch.west.asc ? ' · Асцендент ' + v(ch.west.asc.name) : ''), 'Луна ' + v(ch.west.moon.name) + '.']);
     if (ch && ch.gua) rows.push(['Число Гуа', String(ch.gua.n), ELN[ch.gua.el] + ', ' + (ch.gua.group === 'east' ? 'източна група' : 'западна група') + '.']);
-    var locked = ['Всички цветове с имена и кодове: основа, до лицето, акценти, бижута и камъни', 'Как да ги носиш според линията ' + L.name, 'Готови формули за изява и всекидневие',
-      'Цветовете по западната и ведическата карта', 'Ба Дзъ, хюман дизайн и Гуа подробно', 'Замени за дрехите, които вече имаш'];
+    if (ch) rows.push(['Рождена карта', 'Слънце ' + v(ch.west.sun.name) + (ch.west.asc ? ' · Асцендент ' + v(ch.west.asc.name) : ''), 'Луна ' + v(ch.west.moon.name) + '.']);
+    if (hd) rows.push(['Хюман дизайн', D.HD_TYPE[hd.type].name + ', профил ' + hd.profile, D.HD_AUTH[hd.authority].name + ' авторитет.']);
+    var locked = ['Три нарисувани визии в твоите цветове и двойки цветове за носене', 'Всички цветове с имена и кодове: основа, до лицето, акценти, бижута и камъни', 'Как да ги носиш според линията ' + L.name, 'Готови формули за изява и всекидневие',
+      'Цветовете по западната и ведическата карта', 'Ба Дзъ, хюман дизайн и Гуа подробно', 'Кой метал озарява лицето ти и кои цветове те уморяват', 'Замени за дрехите, които вече имаш'];
     if (st.sex !== 'm') locked.push('Червила в твоите цветове');
     locked.push('Целият резултат като текст за запазване');
     return { html: '<header class="res-head"><p class="eyebrow">Безплатен преглед</p><h1 class="h-xl">' + esc(st.season.sub || S.name) + ' · ' + L.name + '</h1><p class="lede">Ето накратко какво показват тестовете и картата ти.</p></header>' +
@@ -281,8 +284,9 @@ var makeReport = function (D, P, E, F) {
 
     /* toc */
     var toc = [['looks', 'Визии'], ['pairs', 'Двойки'], ['yesno', 'Да и не'], ['colors', 'Цветове'], ['wear', 'Носене'], ['arch', 'Архетип'], ['formulas', 'Формули']];
-    if (ch) toc.push(['chart', 'Карта'], ['bazi', 'Ба Дзъ'], ['hd', 'Хюман дизайн']);
+    if (ch) toc.push(['chart', 'Карта'], ['bazi', 'Ба Дзъ']);
     if (ch && ch.gua) toc.push(['gua', 'Гуа']);
+    if (ch) toc.push(['hd', 'Хюман дизайн']);
     toc.push(['swap', 'Замени']); if (st.sex !== 'm') toc.push(['lips', 'Червило']); toc.push(['data', 'Данни']);
     out += '<nav class="toc chips" aria-label="Раздели">' + toc.map(function (t) { return '<button class="chip" data-act="goto" data-id="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>';
 
@@ -355,14 +359,6 @@ var makeReport = function (D, P, E, F) {
         '<p class="small">В палитрата: ' + ['wood', 'fire', 'earth', 'metal', 'water'].map(function (e) { return ELN[e] + ' ' + (counts[e] || 0); }).join(' · ') + '. Стълбът на деня и часът са по местно слънчево време.</p>' +
         '<p class="note">Оценката на силата е опростена. Майстор по Ба Дзъ гледа и специалните структури и сблъсъците между клоните.</p>');
 
-      /* human design */
-      var T = D.HD_TYPE[hd.type], Au = D.HD_AUTH[hd.authority], lines = hd.profile.split('/');
-      out += sec('hd', 'Хюман дизайн', 'Хюман дизайнът не дава цветове за облекло. Тук той казва как и кога да ползваш палитрата.',
-        '<dl class="kv"><dt>Тип</dt><dd>' + T.name + ', ' + T.strat + '</dd><dt>Авторитет</dt><dd>' + Au.name + '</dd><dt>Профил</dt><dd>' + hd.profile + '</dd><dt>Дефинирани</dt><dd>' + (hd.defined.map(function (c) { return D.HD_CENTERS[c]; }).join(', ') || 'няма') + '</dd><dt>Отворени</dt><dd>' + hd.open.map(function (c) { return D.HD_CENTERS[c]; }).join(', ') + '</dd></dl>' +
-        '<ul class="ul"><li>' + gx(T.wear) + '</li><li>' + Au.rule + '</li>' + lines.filter(function (x, i) { return lines.indexOf(x) === i; }).map(function (l) { return '<li>' + D.HD_LINE[l] + '</li>'; }).join('') + '</ul>' +
-        (lines.indexOf('3') >= 0 && p.test.length ? '<div class="sub"><h3>Тестови цветове</h3><p class="small">По един на сезон, само от благоприятните елементи.</p>' + grid(p.test) + '</div>' : '') +
-        (!ch.hasTime ? '<p class="note">Без час на раждане хюман дизайнът е сметнат за обяд и може да е различен.</p>' : ''));
-
       /* gua */
       if (ch.gua) {
         var g = ch.gua, gs = D.STONES.filter(function (s) { return s[2] === g.el; }).slice(0, 3).map(function (s) { return s[0]; });
@@ -370,6 +366,14 @@ var makeReport = function (D, P, E, F) {
           '<dl class="kv"><dt>Число</dt><dd>' + g.n + ' · ' + ELN[g.el] + ' · ' + (g.group === 'east' ? 'източна група' : 'западна група') + '</dd><dt>Благоприятни посоки</dt><dd>' + g.dirs.join(', ') + '</dd><dt>Камъни на елемента</dt><dd>' + gs.join(', ') + '</dd></dl>' +
           (bz && P.tierOf(g.el, bz) === 'avoid' ? '<p class="note">Елементът на Гуа е неблагоприятен по Ба Дзъ, затова камъните му не влизат в палитрата.</p>' : ''));
       }
+
+      /* human design */
+      var T = D.HD_TYPE[hd.type], Au = D.HD_AUTH[hd.authority], lines = hd.profile.split('/');
+      out += sec('hd', 'Хюман дизайн', 'Хюман дизайнът не дава цветове за облекло. Тук той казва как и кога да ползваш палитрата.',
+        '<dl class="kv"><dt>Тип</dt><dd>' + T.name + ', ' + T.strat + '</dd><dt>Авторитет</dt><dd>' + Au.name + '</dd><dt>Профил</dt><dd>' + hd.profile + '</dd><dt>Дефинирани</dt><dd>' + (hd.defined.map(function (c) { return D.HD_CENTERS[c]; }).join(', ') || 'няма') + '</dd><dt>Отворени</dt><dd>' + hd.open.map(function (c) { return D.HD_CENTERS[c]; }).join(', ') + '</dd></dl>' +
+        '<ul class="ul"><li>' + gx(T.wear) + '</li><li>' + Au.rule + '</li>' + lines.filter(function (x, i) { return lines.indexOf(x) === i; }).map(function (l) { return '<li>' + D.HD_LINE[l] + '</li>'; }).join('') + '</ul>' +
+        (lines.indexOf('3') >= 0 && p.test.length ? '<div class="sub"><h3>Тестови цветове</h3><p class="small">По един на сезон, само от благоприятните елементи.</p>' + grid(p.test) + '</div>' : '') +
+        (!ch.hasTime ? '<p class="note">Без час на раждане хюман дизайнът е сметнат за обяд и може да е различен.</p>' : ''));
     }
 
     /* swap */

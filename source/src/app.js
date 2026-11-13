@@ -34,7 +34,7 @@
 
   function fresh() {
     return {
-      view: 'intro', sex: null,
+      view: 'intro', sex: null, qv: 2,
       birth: { date: '', time: '', noTime: false, place: null, manual: false, mlat: '', mlon: '', mtz: 'Europe/Sofia', sex: 'f', skip: false },
       season: { tab: 'photo', value: null, sub: null, src: null, ai: null, quiz: [], photo: {} },
       line: { answers: [], i: 0, value: null, pick: false, done: false },
@@ -45,7 +45,7 @@
   var st = fresh();
   var mem = { blob: null, work: null, marks: {}, target: 'skin', aiAvail: false, busy: false, status: '', err: '', toast: '', cacheKey: null, cache: null };
   function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { } }
-  function load() { try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.birth && s.season) { var f = fresh(); ['birth', 'season', 'line', 'arch'].forEach(function (k) { f[k] = Object.assign(f[k], s[k] || {}); }); f.view = s.view || 'intro'; f.sex = s.sex || (s.birth && s.birth.sex) || null; f.session = s.session || null; return f; } } catch (e) { } return null; }
+  function load() { try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.birth && s.season) { var f = fresh(); ['birth', 'season', 'line', 'arch'].forEach(function (k) { f[k] = Object.assign(f[k], s[k] || {}); }); f.view = s.view || 'intro'; f.sex = s.sex || (s.birth && s.birth.sex) || null; f.session = s.session || null; if (s.qv !== 2) { f.season.quiz = []; if (f.season.src === 'quiz') { f.season.value = null; f.season.sub = null; f.season.src = null; if (f.view !== 'intro') f.view = 'season'; } } return f; } } catch (e) { } return null; }
 
   /* ---------- completeness ---------- */
   function birthOk() {
@@ -87,24 +87,40 @@
     var strips = ['winter', 'summer', 'spring', 'autumn'].map(function (k) {
       return '<div class="strip"><div class="cols">' + seasonStrip(k, 6) + '</div><span>' + D.SEASONS[k].name + '</span></div>';
     }).join('');
-    return '<div class="screen">' +
-      '<header class="intro"><p class="eyebrow">Сезон · линия · архетип · карта</p><h1 class="h-xl">Стилова карта</h1>' +
-      '<p class="lede">Лична палитра от четири източника: цветовия ти сезон по снимка, линията на тялото, стиловия архетип и рождената ти карта. Картата подрежда сезона: кои цветове те подсилват, кои да носиш малко и кои да оставиш.</p>' +
+    var incl = [
+      ['Цветови сезон', 'Кои цветове носят лицето, кожата и очите ти. Определя се по снимка или с няколко въпроса.'],
+      ['Линия на тялото', 'Един от 13 типа, от Драматик до Романтик. Казва кои силуети, материи и шарки ти стоят.'],
+      ['Стилов архетип', 'Какво излъчваш: един от седем архетипа, от ' + gf('Кралицата до Мистичката', 'Краля до Мистика') + '. Избира материите и детайла.'],
+      ['Ба Дзъ', 'Китайската карта на петте елемента. Подрежда цветовете ти: кои те подсилват и кои да носиш малко.'],
+      ['Западна и ведическа астрология', 'Слънце, Луна, Асцендент и сегашният ти период, преведени в цветове от твоята палитра.'],
+      ['Хюман дизайн', 'Как да носиш палитрата и как да пазаруваш според типа и авторитета си.'],
+      ['Число Гуа', 'Личният ти елемент от фън шуй, с благоприятните посоки и камъните към него.']
+    ];
+    var gets = ['Лична палитра с имена и кодове на цветовете', 'Три нарисувани визии в твоите цветове и твоята линия', 'Двойки цветове, които се носят заедно',
+      'Да и не за силуети и шарки', 'Кой метал озарява лицето ти и кои цветове те уморяват', 'Замени за дрехите, които вече имаш'];
+    return '<div class="screen intro-screen">' +
+      '<header class="hero"><p class="brandmark">Стилова карта</p>' +
+      '<p class="eyebrow">Личен стилов анализ</p><h1 class="h-xxl">Твоят стил, разчетен по седем системи</h1>' +
+      '<p class="lede">Повечето стилови тестове спират до цветовия тип и формата на тялото. Този анализ добавя архетипа ти и рождената ти карта и ги свежда до една лична палитра с ясни правила за обличане.</p>' +
+      '<div class="row"><button class="btn primary" data-act="tostart">Започни анализа</button>' + (has ? '<button class="btn ghost" data-act="go" data-v="result">Виж резултата си</button>' : '') + '<span class="meta">4 стъпки · около 10 минути</span></div>' +
+      '<div class="strips" aria-hidden="true">' + strips + '</div></header>' +
+      '<section class="sec"><div class="sec-head"><p class="eyebrow">Седем системи</p><h2 class="h-l">Какво включва анализът</h2></div><ol class="incl">' +
+      incl.map(function (x) { return '<li><div><b>' + x[0] + '</b><span>' + x[1] + '</span></div></li>'; }).join('') + '</ol></section>' +
+      '<section class="sec"><div class="sec-head"><p class="eyebrow">Резултатът</p><h2 class="h-l">Какво получаваш</h2></div><ul class="gets">' + gets.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></section>' +
+      '<section class="sec"><div class="sec-head"><p class="eyebrow">Четири стъпки</p><h2 class="h-l">Как протича</h2></div><ol class="plan">' +
+      '<li><div><b>Данни за раждане</b><span>Дата, час и място. От тях се смятат картите.</span></div></li>' +
+      '<li><div><b>Цветови сезон</b><span>По снимка, с въпроси или директно, ако го знаеш.</span></div></li>' +
+      '<li><div><b>Линия</b><span>Дванадесет въпроса с рисунки за фигурата и лицето.</span></div></li>' +
+      '<li><div><b>Архетип</b><span>Девет въпроса за това какво излъчваш.</span></div></li>' +
+      '</ol><p class="note">Отговорите се пазят само на това устройство. Снимката не се запазва.' + (IS_SITE ? ' <a href="terms.html">Общи условия</a> · <a href="privacy.html">Поверителност</a>' : '') + '</p></section>' +
+      installCard() +
+      '<section class="sec startbox" id="start"><div class="sec-head"><h2 class="h-l">Започни</h2></div>' +
       '<div class="field"><span class="lbl">Ти си</span><div class="chips" role="group" aria-label="Пол">' +
       '<button type="button" class="chip" data-act="sex" data-v="f" aria-pressed="' + (st.sex === 'f') + '">Жена</button>' +
       '<button type="button" class="chip" data-act="sex" data-v="m" aria-pressed="' + (st.sex === 'm') + '">Мъж</button></div>' +
-      '<p class="small">Изборът сменя формите в текстовете и архетипите, а е нужен и за числото Гуа.</p></div>' +
+      '<p class="small">От избора зависят формите в текстовете, архетипите, визиите и числото Гуа.</p></div>' +
       '<div class="price"><b>' + priceTag() + '</b><span>Тестовете и кратък преглед на резултата са безплатни. Пълният резултат струва ' + priceNow() + ', еднократно. ' + promoLine() + '</span></div>' +
-      '<div class="row"><button class="btn primary" data-act="start"' + (st.sex ? '' : ' disabled') + '>' + (has ? 'Започни отначало' : 'Започни') + '</button>' + (has ? '<button class="btn" data-act="go" data-v="result">Виж резултата си</button>' : '') + '<span class="meta">4 стъпки · около 10 минути</span></div>' + (st.sex ? '' : '<p class="small">Избери „Жена“ или „Мъж“, за да започнеш.</p>') + '</header>' +
-      '<div class="strips" aria-hidden="true">' + strips + '</div>' +
-      '<ol class="plan">' +
-      '<li><div><b>Данни за раждане</b><span>Ба Дзъ, западна и ведическа карта, хюман дизайн и число Гуа.</span></div></li>' +
-      '<li><div><b>Цветови сезон</b><span>По снимка, с въпроси или директно, ако го знаеш.</span></div></li>' +
-      '<li><div><b>Линия</b><span>Тринадесетте типа фигура, от Драматик до Романтик.</span></div></li>' +
-      '<li><div><b>Архетип</b><span>Седемте стилови архетипа: какво излъчваш.</span></div></li>' +
-      '</ol>' +
-      installCard() +
-      '<p class="note">Резултатът се пази само на това устройство. Снимката не се запазва.' + (IS_SITE ? ' <a href="terms.html">Общи условия</a> · <a href="privacy.html">Поверителност</a>' : '') + '</p>' +
+      '<div class="row"><button class="btn primary" data-act="start"' + (st.sex ? '' : ' disabled') + '>' + (has ? 'Започни отначало' : 'Започни') + '</button>' + (st.sex ? '' : '<span class="small">Избери „Жена“ или „Мъж“, за да започнеш.</span>') + '</div></section>' +
       '</div>';
   }
 
@@ -324,7 +340,7 @@
       '<div class="progress" aria-hidden="true"><i style="width:' + (i / n * 100) + '%"></i></div>' +
       '<div class="qtop"><p class="eyebrow">' + title + ' · въпрос ' + (i + 1) + ' от ' + n + '</p><button class="link" data-act="qback" data-k="' + kind + '">Назад</button></div>' +
       '<h1 class="h-l qh" id="qh" tabindex="-1">' + q + '</h1>' +
-      '<div class="opts">' + opts.map(function (o) { return '<button class="opt" data-act="qpick" data-k="' + kind + '" data-v="' + o[0] + '" aria-pressed="' + (cur === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="opts">' + opts.map(function (o) { var ic = kind === 'line' ? Icons.line(i, o[0]) : ''; return '<button class="opt' + (ic ? ' has-ic' : '') + '" data-act="qpick" data-k="' + kind + '" data-v="' + o[0] + '" aria-pressed="' + (cur === o[0]) + '">' + (ic ? '<span class="ic">' + ic + '</span><span>' + o[1] + '</span>' : o[1]) + '</button>'; }).join('') + '</div>' +
       '<button class="link" data-act="qknow" data-k="' + kind + '">' + (kind === 'line' ? 'Знам линията си' : 'Знам архетипа си') + '</button>' +
       '</div></div>';
   }
@@ -420,8 +436,8 @@
         (mem.toast ? '<p class="toast" role="status">' + mem.toast + '</p>' : '') +
         '<button class="link" data-act="reset">Изтрий и започни отначало</button></div></div>';
     }
-    return out + R.teaser.html + (R.note ? '<p class="err" role="alert">' + esc(R.note) + '</p>' : '') + payCard(R) +
-      '<div class="row"><button class="link" data-act="go" data-v="birth">Промени данните</button></div></div>';
+    return out + R.teaser.html + '<div class="row"><button class="link" data-act="go" data-v="birth">Промени данните</button></div>' +
+      (R.note ? '<p class="err" role="alert">' + esc(R.note) + '</p>' : '') + payCard(R) + '</div>';
   }
   function startCheckout() {
     if (!CONFIG.checkoutReady) { mem.payNote = 'Плащането ще бъде свързано, когато сайтът тръгне.'; render(); return; }
@@ -452,7 +468,7 @@
     var a = b.dataset.act, val = b.dataset.v;
     if (a === 'go') { if (val === 'intro' || canGo(val)) go(val); }
     else if (a === 'start') { if (canGo('result')) { var sx = st.sex; st = fresh(); st.sex = sx; try { localStorage.removeItem(KEY); } catch (er) { } } mem.cacheKey = null; mem.err = ''; go('birth'); }
-    else if (a === 'sex') { st.sex = val; st.birth.sex = val; mem.cacheKey = null; save(); render(); }
+    else if (a === 'sex') { st.sex = val; st.birth.sex = val; mem.cacheKey = null; save(); var ys = window.scrollY; render(); try { window.scrollTo(0, ys); } catch (er) { } }
     else if (a === 'manual') { st.birth.manual = b.dataset.on === '1'; if (st.birth.manual) st.birth.place = null; mem.err = ''; save(); render(); }
     else if (a === 'place') { var c = D.CITIES.filter(function (x) { return x[0] === b.dataset.n; })[0]; if (c) { st.birth.place = c; mem.err = ''; save(); render(); } }
     else if (a === 'unplace') { st.birth.place = null; save(); render(); var inp = document.getElementById('b-place'); if (inp) inp.focus(); }
@@ -463,6 +479,7 @@
     else if (a === 'retry') { mem.rep = null; render(); }
     else if (a === 'preview') { mem.preview = true; render(); try { window.scrollTo(0, 0); } catch (er) { } }
     else if (a === 'unpreview') { mem.preview = false; render(); try { window.scrollTo(0, 0); } catch (er) { } }
+    else if (a === 'tostart') { var sb = document.getElementById('start'); if (sb) sb.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }
     else if (a === 'analyse') analyse();
     else if (a === 'ptarget') { mem.target = val; var y2 = window.scrollY; render(); try { window.scrollTo(0, y2); } catch (er) { } }
     else if (a === 'sq') {

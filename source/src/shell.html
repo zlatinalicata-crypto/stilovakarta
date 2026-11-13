@@ -6,22 +6,22 @@
 <title>Стилова карта</title>
 <!--HEAD-->
 <style>
-/* Layout: a fitting-room notebook. One column, the four steps on top, colours shown as fabric cards. Sharp 2px corners echo tailoring. */
+/* Palette: two quiet colours (chalk and aubergine-black) and one loud (fuchsia), so the personal palettes carry the colour. Layout: a fitting-room notebook. One column, the four steps on top, colours shown as fabric cards. Sharp 2px corners echo tailoring. */
 :root{
-  --bg:#F3F1F4; --surface:#FFFFFF; --ink:#1C1A20; --muted:#68626F; --line:#DCD7E0;
-  --accent:#6E1F3B; --accent-soft:#F4E7EC; --on-accent:#FFFFFF; --warn:#8A5A12;
+  --bg:#F1EFEA; --surface:#FAF9F6; --ink:#16131A; --muted:#6A6570; --line:#D8D4CC;
+  --accent:#E4005B; --accent-soft:#E7E4DC; --on-accent:#FFFFFF; --warn:#8A5A12; --hero:#16131A; --hero-ink:#F1EFEA;
   --display:"Prata","Didot","Bodoni 72",Georgia,serif;
   --body:"Onest","Segoe UI",system-ui,-apple-system,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#141218; --surface:#1D1A22; --ink:#EEEAF2; --muted:#A39DAC; --line:#38323F;
-    --accent:#E294AF; --accent-soft:#3A2231; --on-accent:#1A0E14; --warn:#E0B266; color-scheme:dark;
+    --bg:#121015; --surface:#1C1920; --ink:#F1EFEA; --muted:#A49FAA; --line:#36313C;
+    --accent:#FF2D7A; --accent-soft:#2A2630; --on-accent:#16131A; --warn:#E0B266; --hero:#1C1920; --hero-ink:#F1EFEA; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#141218; --surface:#1D1A22; --ink:#EEEAF2; --muted:#A39DAC; --line:#38323F;
-  --accent:#E294AF; --accent-soft:#3A2231; --on-accent:#1A0E14; --warn:#E0B266; color-scheme:dark;
+  --bg:#121015; --surface:#1C1920; --ink:#F1EFEA; --muted:#A49FAA; --line:#36313C;
+    --accent:#FF2D7A; --accent-soft:#2A2630; --on-accent:#16131A; --warn:#E0B266; --hero:#1C1920; --hero-ink:#F1EFEA; color-scheme:dark;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -212,7 +212,7 @@ b,strong{font-weight:600}
 .fold[open]>summary::after{content:"–"}
 .fold-body{display:flex;flex-direction:column;gap:16px;padding-bottom:20px}
 .more-h{margin-top:8px}
-.stage{background:#ECE9EE;border-radius:2px;display:flex;justify-content:center;align-items:flex-end;padding-top:6px;overflow:hidden}
+.stage{background:#E6E3DC;border-radius:2px;display:flex;justify-content:center;align-items:flex-end;padding-top:6px;overflow:hidden}
 .stage svg{height:100%;width:auto;max-width:100%;display:block}
 .looks{display:grid;grid-template-columns:1fr;gap:10px}
 .look{display:grid;grid-template-columns:120px minmax(0,1fr);gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:2px;padding:10px;align-items:start}
@@ -248,6 +248,44 @@ b,strong{font-weight:600}
 .brief dt{font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:2px}
 .brief dd{margin:0;font-size:.94rem;display:flex;flex-direction:column;gap:3px}
 .brief small{color:var(--muted);font-size:.8rem}
+.btn{border-radius:0;text-transform:uppercase;letter-spacing:.1em;font-size:.82rem;font-weight:600;padding:15px 26px}
+.btn.ghost{border-color:currentColor;color:inherit}
+.chip,.opt,.input,select.input,.card,.sw,.look,.steps button,.tabs,.sbtn,.picked,.sugg{border-radius:0}
+.brand{text-transform:uppercase;letter-spacing:.22em;font-family:var(--body);font-size:.74rem;font-weight:600}
+.eyebrow{color:var(--muted);letter-spacing:.2em}
+.card.hl{border-color:var(--ink)}
+.opt[aria-pressed="true"]{border-color:var(--ink)}
+.tier.fav1,.tier.fav{color:var(--ink)}
+.elrow .pill.fav{border-color:var(--ink);color:var(--ink)}
+.plus li::before,.ul li::before{color:var(--ink)}
+.plan li::before{color:var(--muted)}
+.sig{border-left-color:var(--accent)}
+.h-xxl{font-size:clamp(2.5rem,10.5vw,4.6rem);line-height:1.02;letter-spacing:-.015em}
+.intro-screen{gap:56px}
+.hero{background:var(--hero);color:var(--hero-ink);box-shadow:0 0 0 100vmax var(--hero);clip-path:inset(0 -100vmax);display:flex;flex-direction:column;gap:20px;padding:8px 0 44px;margin-top:-20px;padding-top:28px}
+.hero .lede{color:var(--hero-ink);opacity:.78}
+.hero .meta{color:var(--hero-ink);opacity:.6}
+.hero .eyebrow{color:var(--accent);margin-top:26px}
+.hero .strip span{color:var(--hero-ink);opacity:.6;letter-spacing:.12em;text-transform:uppercase;font-size:.68rem}
+.hero .strips{margin-top:18px}
+.hero .strip .cols{height:170px;border-radius:0}
+.brandmark{text-transform:uppercase;letter-spacing:.3em;font-size:.72rem;font-weight:600;opacity:.85}
+.incl{list-style:none;margin:0;padding:0;counter-reset:n;display:grid;grid-template-columns:1fr;border-top:1px solid var(--ink)}
+@media (min-width:640px){.incl{grid-template-columns:1fr 1fr;column-gap:32px}}
+.incl li{counter-increment:n;display:grid;grid-template-columns:44px 1fr;gap:8px;padding:16px 0;border-bottom:1px solid var(--line)}
+.incl li::before{content:counter(n,decimal-leading-zero);font-family:var(--display);font-size:1.15rem;color:var(--muted);line-height:1.3}
+.incl b{display:block;font-family:var(--display);font-weight:400;font-size:1.12rem;line-height:1.3}
+.incl span{display:block;color:var(--muted);font-size:.93rem;margin-top:3px}
+.gets{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:0;border-top:1px solid var(--ink)}
+@media (min-width:640px){.gets{grid-template-columns:1fr 1fr;column-gap:32px}}
+.gets li{padding:12px 0 12px 22px;border-bottom:1px solid var(--line);position:relative;font-size:.98rem}
+.gets li::before{content:"";position:absolute;left:0;top:1.25em;width:10px;height:2px;background:var(--accent)}
+.startbox{border-top:1px solid var(--ink);padding-top:28px}
+.price{border-radius:0;border-color:var(--ink);padding:16px 18px}
+.price b{font-size:1.9rem}
+.opt.has-ic{display:grid;grid-template-columns:58px minmax(0,1fr);gap:14px;align-items:center;padding:10px 15px}
+.ic{display:block;color:var(--ink)}
+.ic svg{width:58px;height:72px;display:block}
 .foot{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:20px}
 .toast{font-size:.9rem;color:var(--accent);font-weight:500}
 @media (prefers-reduced-motion: reduce){.progress i{transition:none}}
