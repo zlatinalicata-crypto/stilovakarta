@@ -1,4 +1,6 @@
 /* The two endpoints: /api/report and /api/checkout. */
+const I18N = require('./i18n.js');
+const T = I18N.T;
 const DATA = require('./data.js');
 global.DATA = DATA;
 const Engine = require('./engine.js');
@@ -8,11 +10,11 @@ const pay = require('./pay.js');
 
 const Figure = require('./figure.js');
 const R = makeReport(DATA, Pal, Engine, Figure);
-const NOTES = {
+const NOTES = I18N.wrap({
   mismatch: 'Плащането е за други данни. Върни данните, с които плати, или отключи този резултат отделно.',
   unpaid: 'Плащането още не е потвърдено. Опитай отново след минута.',
   unknown: 'Не намирам това плащане. Ако плащането е минало, пиши ни и ще помогнем.'
-};
+});
 
 function json(code, obj) {
   return { statusCode: code, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }, body: JSON.stringify(obj) };
@@ -29,6 +31,7 @@ function parse(event) {
 async function report(event) {
   const body = parse(event);
   if (!body) return json(400, { error: 'Невалидна заявка.' });
+  I18N.lang = body.lang === 'en' ? 'en' : 'bg';
   const inp = R.clean(body.input);
   const bad = R.invalid(inp);
   if (bad) return json(400, { error: bad });
@@ -38,8 +41,10 @@ async function report(event) {
   if (body.session) {
     const r = await pay.isPaid(body.session, h);
     paid = r.paid;
+    I18N.lang = body.lang === 'en' ? 'en' : 'bg';
     note = r.note ? NOTES[r.note] : null;
   }
+  I18N.lang = body.lang === 'en' ? 'en' : 'bg';
   const out = { teaser: R.teaser(inp), full: null, paid, testMode, note };
   if (paid || (testMode && body.preview)) out.full = R.full(inp);
   return json(200, out);
@@ -48,16 +53,17 @@ async function report(event) {
 async function checkout(event) {
   const body = parse(event);
   if (!body) return json(400, { error: 'Невалидна заявка.' });
-  if (body.consent !== true) return json(400, { error: 'Потвърди съгласието си, за да продължиш.' });
+  I18N.lang = body.lang === 'en' ? 'en' : 'bg';
+  if (body.consent !== true) return json(400, { error: T('Потвърди съгласието си, за да продължиш.') });
   const inp = R.clean(body.input);
   const bad = R.invalid(inp);
   if (bad) return json(400, { error: bad });
   const origin = (process.env.SITE_URL || process.env.URL || ('https://' + ((event.headers || {}).host || ''))).replace(/\/$/, '');
   try {
-    return json(200, await pay.createCheckout(pay.hash(R.key(inp)), origin));
+    return json(200, await pay.createCheckout(pay.hash(R.key(inp)), origin, body.lang === 'en' ? 'en' : 'bg'));
   } catch (e) {
     const nc = e.code === 'not_configured';
-    return json(nc ? 503 : 502, { error: nc ? 'Плащането още не е настроено.' : 'Плащането не можа да започне. Опитай отново след малко.' });
+    return json(nc ? 503 : 502, { error: (I18N.lang = body.lang === 'en' ? 'en' : 'bg', nc) ? T('Плащането още не е настроено.') : T('Плащането не можа да започне. Опитай отново след малко.') });
   }
 }
 

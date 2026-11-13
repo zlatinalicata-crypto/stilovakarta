@@ -1,6 +1,6 @@
 /* Стилова карта: offline cache. Version changes with every build. */
-var CACHE = 'stilova-karta-b8d83e932d';
-var ASSETS = ["/", "index.html", "terms.html", "privacy.html", "manifest.webmanifest", "fonts/onest-cyrillic-400-normal.woff2", "fonts/onest-cyrillic-500-normal.woff2", "fonts/onest-cyrillic-600-normal.woff2", "fonts/onest-latin-400-normal.woff2", "fonts/onest-latin-500-normal.woff2", "fonts/onest-latin-600-normal.woff2", "fonts/prata-cyrillic-400-normal.woff2", "fonts/prata-latin-400-normal.woff2", "icons/apple-touch-icon.png", "icons/favicon-64.png", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png"];
+var CACHE = 'stilova-karta-8fcc538363';
+var ASSETS = ["/", "index.html", "terms.html", "privacy.html", "terms.en.html", "privacy.en.html", "manifest.webmanifest", "fonts/onest-cyrillic-400-normal.woff2", "fonts/onest-cyrillic-500-normal.woff2", "fonts/onest-cyrillic-600-normal.woff2", "fonts/onest-latin-400-normal.woff2", "fonts/onest-latin-500-normal.woff2", "fonts/onest-latin-600-normal.woff2", "fonts/prata-cyrillic-400-normal.woff2", "fonts/prata-latin-400-normal.woff2", "icons/apple-touch-icon.png", "icons/favicon-64.png", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png"];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ASSETS); }).then(function () { return self.skipWaiting(); }));
