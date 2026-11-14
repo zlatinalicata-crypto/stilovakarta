@@ -470,12 +470,40 @@
       });
     return mem.rep;
   }
+  /* Codes: checked on the server, which also gives the new price. */
+  function money(cents) { var v = (cents / 100).toFixed(2); return I18N.lang === 'en' ? '€' + v : v.replace('.', ',') + ' €'; }
+  function codeBox() {
+    if (!CONFIG.checkoutReady) return '';
+    var c = mem.code;
+    if (c) return '<p class="small code-ok" role="status">' + (c.free ? T('Кодът отключва пълния резултат безплатно.') : T('Кодът е приложен: −') + c.pct + '%.') + ' <button class="link" data-act="uncode">' + T('Махни кода') + '</button></p>';
+    if (!mem.codeOpen) return '<div class="row"><button class="link" data-act="codeopen">' + T('Имам код за отстъпка') + '</button></div>';
+    return '<div class="code-row"><input class="input" id="code" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" placeholder="' + T('Код') + '" aria-label="' + T('Код за отстъпка') + '" value="' + esc(mem.codeInput || '') + '">' +
+      '<button class="btn" data-act="code"' + (mem.codeBusy ? ' disabled' : '') + '>' + T('Приложи') + '</button></div>' +
+      (mem.codeErr ? '<p class="err" role="alert">' + esc(mem.codeErr) + '</p>' : '');
+  }
+  function applyCode() {
+    var v = String(mem.codeInput || '').trim();
+    if (!v || mem.codeBusy) return;
+    mem.codeBusy = true; mem.codeErr = ''; render();
+    fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: v, dry: true, lang: I18N.lang }) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) {
+        mem.codeBusy = false;
+        if (x.ok && (x.j.free || x.j.pct)) { mem.code = { code: v, free: !!x.j.free, pct: x.j.pct, cents: x.j.cents }; mem.codeOpen = false; mem.payNote = ''; }
+        else mem.codeErr = x.j.error || T('Този код не е валиден. Провери как е изписан.');
+        render();
+      })
+      .catch(function () { mem.codeBusy = false; mem.codeErr = T('Няма връзка със сървъра. Опитай отново.'); render(); });
+  }
   function payCard(R) {
-    var consent = '';
+    var consent = '', c = mem.code;
+    var price = !c ? priceTag() : (c.free ? T('Безплатно') : money(c.cents)) + ' <s>' + priceNow() + '</s>';
     if (CONFIG.checkoutReady) consent = '<label class="check consent" for="consent"><input type="checkbox" id="consent"' + (mem.consent ? ' checked' : '') + '> <span>' +
-      gf(T('Съгласна'), T('Съгласен')) + T(' съм резултатът да ми бъде предоставен веднага след плащането и знам, че така губя правото си на отказ от покупката. Приемам <a href="terms.html" target="_blank" rel="noopener">Общите условия</a>.</span></label>');
-    return T('<div class="card hl pay"><p class="eyebrow">Пълен резултат</p><p class="pay-price">') + priceTag() + '</p><p class="small">' + promoLine() + T(' Еднократно плащане с карта. Резултатът се отваря веднага след плащането.</p>') +
-      consent + '<div class="row"><button class="btn primary" data-act="pay"' + (CONFIG.checkoutReady && !mem.consent || mem.paying ? ' disabled' : '') + '>' + (mem.paying ? T('Отварям плащането…') : T('Отключи пълния резултат')) + '</button></div>' +
+      (c && c.free ? T('Приемам <a href="terms.html" target="_blank" rel="noopener">Общите условия</a>.</span></label>') :
+      gf(T('Съгласна'), T('Съгласен')) + T(' съм резултатът да ми бъде предоставен веднага след плащането и знам, че така губя правото си на отказ от покупката. Приемам <a href="terms.html" target="_blank" rel="noopener">Общите условия</a>.</span></label>'));
+    return T('<div class="card hl pay"><p class="eyebrow">Пълен резултат</p><p class="pay-price">') + price + '</p>' +
+      (c && c.free ? '' : '<p class="small">' + promoLine() + T(' Еднократно плащане с карта. Резултатът се отваря веднага след плащането.</p>')) +
+      codeBox() + consent + '<div class="row"><button class="btn primary" data-act="pay"' + (CONFIG.checkoutReady && !mem.consent || mem.paying ? ' disabled' : '') + '>' + (mem.paying ? (c && c.free ? T('Отключвам…') : T('Отварям плащането…')) : (c && c.free ? T('Отключи безплатно') : T('Отключи пълния резултат'))) + '</button></div>' +
       (mem.payNote ? '<p class="small" role="status">' + esc(mem.payNote) + '</p>' : '') +
       (R.testMode ? T('<button class="link" data-act="preview">Тестов режим: виж пълния резултат без плащане</button>') : '') + '</div>';
   }
@@ -521,10 +549,12 @@
     if (!CONFIG.checkoutReady) { mem.payNote = T('Плащането ще бъде свързано, когато сайтът тръгне.'); render(); return; }
     if (!mem.consent || mem.paying) return;
     mem.paying = true; mem.payNote = ''; render();
-    fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: inputOf(), consent: true, lang: I18N.lang }) })
+    fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: inputOf(), consent: true, lang: I18N.lang, code: mem.code ? mem.code.code : null }) })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (x) {
         if (x.ok && x.j.url) { save(); location.href = x.j.url; return; }
+        if (x.ok && x.j.session) { st.session = x.j.session; mem.paying = false; mem.code = null; mem.rep = null; save(); render(); try { window.scrollTo(0, 0); } catch (er) { } return; }
+        if (x.j.badCode) mem.code = null;
         mem.paying = false; mem.payNote = x.j.error || T('Плащането не можа да започне. Опитай отново.'); render();
       })
       .catch(function () { mem.paying = false; mem.payNote = T('Няма връзка със сървъра. Опитай отново.'); render(); });
@@ -557,6 +587,9 @@
     else if (a === 'stab') { st.season.tab = val; save(); render(); }
     else if (a === 'install' && installEvt) { installEvt.prompt(); installEvt.userChoice.then(function () { installEvt = null; render(); }, function () { }); }
     else if (a === 'pay') startCheckout();
+    else if (a === 'codeopen') { mem.codeOpen = true; render(); var ci = document.getElementById('code'); if (ci) ci.focus(); }
+    else if (a === 'code') applyCode();
+    else if (a === 'uncode') { mem.code = null; mem.codeInput = ''; mem.codeOpen = false; render(); }
     else if (a === 'retry') { mem.rep = null; render(); }
     else if (a === 'preview') { mem.preview = true; render(); try { window.scrollTo(0, 0); } catch (er) { } }
     else if (a === 'unpreview') { mem.preview = false; render(); try { window.scrollTo(0, 0); } catch (er) { } }
@@ -609,8 +642,10 @@
     }
     else if (a === 'reset') { var lg2 = st.lang; st = fresh(); st.lang = lg2; mem.blob = null; mem.work = null; mem.marks = {}; mem.cacheKey = null; mem.toast = ''; mem.status = ''; try { localStorage.removeItem(KEY); } catch (er) { } go('intro'); }
   });
+  app.addEventListener('keydown', function (e) { if (e.target.id === 'code' && e.key === 'Enter') { e.preventDefault(); applyCode(); } });
   app.addEventListener('input', function (e) {
     var t = e.target, b = st.birth;
+    if (t.id === 'code') { mem.codeInput = t.value; if (mem.codeErr) { mem.codeErr = ''; var er = t.parentNode.nextSibling; if (er && er.className === 'err') er.remove(); } return; }
     if (t.id === 'b-date') b.date = t.value;
     else if (t.id === 'b-time') b.time = t.value;
     else if (t.id === 'b-lat') b.mlat = t.value.replace(',', '.');
