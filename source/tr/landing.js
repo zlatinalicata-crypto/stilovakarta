@@ -56,7 +56,7 @@ module.exports={
 "Откъсът":"The excerpt",
 "Веднага виждаш част от картата си":"You see part of your card right away",
 "Пълната карта":"The full card",
-", еднократно, ако решиш":", one time, if you decide to",
+"Еднократна такса: ":"One-time fee: ",
 "Плащаш само ако поискаш пълната карта. Без абонамент.":"You pay only if you want the full card. No subscription.",
 "Преди да започнем":"Before we begin",
 "Четири кратки стъпки до твоята карта":"Four short steps to your card",

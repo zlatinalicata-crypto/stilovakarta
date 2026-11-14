@@ -143,7 +143,7 @@
       '<section class="sec"><div class="sec-head"><p class="eyebrow">' + T('Резултатът') + '</p><h2 class="h-l">' + T('Какво има в пълната карта') + '</h2></div><ul class="gets">' + gets.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></section>' +
 
       '<section class="outro" id="outro"><p class="eyebrow">' + T('Следващата страница') + '</p><h2 class="h-xl">' + T('Ако вече те заинтригувах, продължи с теста') + '</h2>' +
-      '<ol class="path"><li><b>' + T('Тестът') + '</b><span>' + T('Безплатен, около 10 минути') + '</span></li><li><b>' + T('Откъсът') + '</b><span>' + T('Веднага виждаш част от картата си') + '</span></li><li><b>' + T('Пълната карта') + '</b><span>' + priceNow() + T(', еднократно, ако решиш') + '</span></li></ol>' +
+      '<ol class="path"><li><b>' + T('Тестът') + '</b><span>' + T('Безплатен, около 10 минути') + '</span></li><li><b>' + T('Откъсът') + '</b><span>' + T('Веднага виждаш част от картата си') + '</span></li><li><b>' + T('Пълната карта') + '</b><span>' + T('Еднократна такса: ') + priceNow() + '</span></li></ol>' +
       '<div class="row">' + cta + '</div><p class="meta">' + T('Плащаш само ако поискаш пълната карта. Без абонамент.') + '</p></section>' +
       '<div class="stick" id="stick"><span>' + T('Безплатен тест · около 10 минути') + '</span><button class="btn primary" data-act="tostart" tabindex="-1">' + T('Към теста') + '</button></div>' +
       '</div>';
