@@ -501,9 +501,12 @@
     if (CONFIG.checkoutReady) consent = '<label class="check consent" for="consent"><input type="checkbox" id="consent"' + (mem.consent ? ' checked' : '') + '> <span>' +
       (c && c.free ? T('Приемам <a href="terms.html" target="_blank" rel="noopener">Общите условия</a>.</span></label>') :
       gf(T('Съгласна'), T('Съгласен')) + T(' съм резултатът да ми бъде предоставен веднага след плащането и знам, че така губя правото си на отказ от покупката. Приемам <a href="terms.html" target="_blank" rel="noopener">Общите условия</a>.</span></label>'));
-    return T('<div class="card hl pay"><p class="eyebrow">Пълен резултат</p><p class="pay-price">') + price + '</p>' +
-      (c && c.free ? '' : '<p class="small">' + promoLine() + T(' Еднократно плащане с карта. Резултатът се отваря веднага след плащането.</p>')) +
-      codeBox() + consent + '<div class="row"><button class="btn primary" data-act="pay"' + (CONFIG.checkoutReady && !mem.consent || mem.paying ? ' disabled' : '') + '>' + (mem.paying ? (c && c.free ? T('Отключвам…') : T('Отварям плащането…')) : (c && c.free ? T('Отключи безплатно') : T('Отключи пълния резултат'))) + '</button></div>' +
+    /* Card payments not switched on yet (no live Stripe key): say so; codes still work. */
+    var soon = CONFIG.checkoutReady && R.payReady === false && !(c && c.free);
+    var info = c && c.free ? '' : soon ? (promoLine() ? '<p class="small">' + promoLine() + '</p>' : '') + '<p class="banner" role="status">' + T('Плащането с карта ще бъде включено съвсем скоро.') + '</p>' :
+      '<p class="small">' + promoLine() + T(' Еднократно плащане с карта. Резултатът се отваря веднага след плащането.</p>');
+    return T('<div class="card hl pay"><p class="eyebrow">Пълен резултат</p><p class="pay-price">') + price + '</p>' + info +
+      codeBox() + (soon ? '' : consent + '<div class="row"><button class="btn primary" data-act="pay"' + (CONFIG.checkoutReady && !mem.consent || mem.paying ? ' disabled' : '') + '>' + (mem.paying ? (c && c.free ? T('Отключвам…') : T('Отварям плащането…')) : (c && c.free ? T('Отключи безплатно') : T('Отключи пълния резултат'))) + '</button></div>') +
       (mem.payNote ? '<p class="small" role="status">' + esc(mem.payNote) + '</p>' : '') +
       (R.testMode ? T('<button class="link" data-act="preview">Тестов режим: виж пълния резултат без плащане</button>') : '') + '</div>';
   }

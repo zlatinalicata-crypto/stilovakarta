@@ -1389,5 +1389,6 @@ var EN_DICT = {"Въвеждаща цена до ":"Introductory price until ",
 "Отключвам…":"Unlocking…",
 "Отключи безплатно":"Unlock for free",
 "Това плащане е направено с тестова карта и не отключва резултата.":"This payment was made with a test card and does not unlock the result.",
-"Приемам <a href=\"terms.html\" target=\"_blank\" rel=\"noopener\">Общите условия</a>.</span></label>":"I accept the <a href=\"terms.en.html\" target=\"_blank\" rel=\"noopener\">Terms</a>.</span></label>"};
+"Приемам <a href=\"terms.html\" target=\"_blank\" rel=\"noopener\">Общите условия</a>.</span></label>":"I accept the <a href=\"terms.en.html\" target=\"_blank\" rel=\"noopener\">Terms</a>.</span></label>",
+"Плащането с карта ще бъде включено съвсем скоро.":"Card payment will be available very soon."};
 if (typeof module !== "undefined") module.exports = EN_DICT;

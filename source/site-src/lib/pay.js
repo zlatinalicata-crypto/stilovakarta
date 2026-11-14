@@ -90,4 +90,11 @@ async function isPaid(id, h) {
   }
 }
 
-module.exports = { hash, findCode, codeInfo, freeSession, createCheckout, isPaid };
+/* Card payments are open with a live Stripe key, or with a test key while TEST_MODE=1. Otherwise the page says payment comes soon. */
+function ready() {
+  if (mock()) return true;
+  const key = process.env.STRIPE_SECRET_KEY || '';
+  return key.indexOf('sk_live_') === 0 || key.indexOf('rk_live_') === 0 || (!!key && process.env.TEST_MODE === '1');
+}
+
+module.exports = { hash, findCode, codeInfo, freeSession, createCheckout, isPaid, ready };
