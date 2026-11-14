@@ -87,43 +87,95 @@
   /* ---------- intro ---------- */
   function viewIntro() {
     var has = canGo('result');
-    var strips = ['winter', 'summer', 'spring', 'autumn'].map(function (k) {
-      return '<div class="strip"><div class="cols">' + seasonStrip(k, 6) + '</div><span>' + D.SEASONS[k].name + '</span></div>';
-    }).join('');
-    var incl = [
-      [T('Цветови сезон'), T('Кои цветове носят лицето, кожата и очите ти. Определя се по снимка или с няколко въпроса.')],
-      [T('Линия на тялото'), T('Един от 13 типа, от Драматик до Романтик. Казва кои силуети, материи и шарки ти стоят.')],
-      [T('Стилов архетип'), T('Какво излъчваш: един от седем архетипа, от ') + gf(T('Кралицата до Мистичката'), T('Краля до Мистика')) + T('. Избира материите и детайла.')],
-      [T('Ба Дзъ'), T('Китайската карта на петте елемента. Подрежда цветовете ти: кои те подсилват и кои да носиш малко.')],
-      [T('Западна и ведическа астрология'), T('Слънце, Луна, Асцендент и сегашният ти период, преведени в цветове от твоята палитра.')],
-      [T('Хюман дизайн'), T('Как да носиш палитрата и как да пазаруваш според типа и авторитета си.')],
-      [T('Число Гуа'), T('Личният ти елемент от фън шуй, с благоприятните посоки и камъните към него.')]
+    var fade = ['winter', 'summer', 'spring', 'autumn'].map(function (k, i) { return '<div class="fs fs' + i + '">' + seasonStrip(k, 6) + '</div>'; }).join('');
+    var qs = [
+      [T('Кои от твоите цветове подхранват <em>енергията ти</em>?'), T('В картата: цветовете, които те подсилват според Ба Дзъ, и кои да носиш по малко.')],
+      [T('Кой цвят за кой ден: <em>изява, работа, ежедневие</em>?'), T('В картата: твоите цветове, подредени по повод.')],
+      [T('Какво <em>излъчваш</em> и как да го подсилиш или намалиш?'), T('В картата: твоят архетип и с какво да го усилиш или смекчиш.')],
+      [T('Какво да носиш <em>до лицето си</em> и какво надолу по тялото?'), T('В картата: кои цветове стоят близо до лицето и кои по-ниско.')]
     ];
-    var gets = [T('Лична палитра с имена и кодове на цветовете'), T('Три нарисувани визии в твоите цветове и твоята линия'), T('Двойки цветове, които се носят заедно'),
-      T('Да и не за силуети и шарки'), T('Кой метал озарява лицето ти и кои цветове те уморяват'), T('Замени за дрехите, които вече имаш')];
+    var why = [
+      [T('Пазаруване без излишно'), T('Знаеш какво търсиш, преди да влезеш в магазина, и подминаваш останалото.')],
+      [T('По-бързи сутрини'), T('Цветовите двойки и трите нарисувани визии ти дават готови комбинации, от които да тръгнеш.')],
+      [T('Яснота за важния ден'), T('За среща, изява или празник вече знаеш кой цвят да избереш и къде да го носиш.')]
+    ];
+    var incl = [
+      [T('Цветови сезон'), T('Нюансите, които стоят добре до лицето ти.')],
+      [T('Линия на тялото'), T('Силуетите, материите и шарките за твоята линия.')],
+      [T('Стилов архетип'), T('Какво излъчваш и как да го изразиш с дрехи.')],
+      [T('Ба Дзъ'), T('Кои елементи и цветове те подкрепят според рождената ти дата.')],
+      [T('Западна и ведическа астрология'), T('Слънце, Луна и Асцендент, преведени в цветове от твоята палитра.')],
+      [T('Хюман дизайн'), T('Как да носиш палитрата и как да пазаруваш според типа си.')],
+      [T('Число Гуа'), T('Личният ти елемент по традицията на фън шуй.')]
+    ];
+    var gets = [T('Лична палитра с имена и кодове на цветовете'), T('Цветове по Ба Дзъ: кои те подсилват и кои по малко'), T('Кой цвят за кой повод и къде по тялото'),
+      T('Три нарисувани визии в твоите цветове и твоята линия'), T('Да и не за силуети и шарки, двойки цветове'), T('Твоят метал и замени за дрехите, които вече имаш')];
+    var locked = [T('Цветове, които те подсилват'), T('Цветове по повод'), T('До лицето и надолу по тялото'), T('Три нарисувани визии'), T('Твоят метал')];
+    var cta = '<button class="btn primary" data-act="tostart">' + T('Към теста') + '</button>';
     return '<div class="screen intro-screen">' +
       '<header class="hero"><div class="hero-top"><p class="brandmark">' + T('Стилова карта') + '</p>' + langBtn() + '</div>' +
-      T('<p class="eyebrow">Личен стилов анализ</p><h1 class="h-xxl">Твоят стил, разчетен по седем системи</h1>') +
-      T('<p class="lede">Повечето стилови тестове спират до цветовия тип и формата на тялото. Този анализ добавя архетипа ти и рождената ти карта и ги свежда до една лична палитра с ясни правила за обличане.</p>') +
-      T('<div class="row"><button class="btn primary" data-act="tostart">Започни анализа</button>') + (has ? T('<button class="btn ghost" data-act="go" data-v="result">Виж резултата си</button>') : '') + T('<span class="meta">4 стъпки · около 10 минути</span></div>') +
-      '<div class="strips" aria-hidden="true">' + strips + '</div></header>' +
-      T('<section class="sec"><div class="sec-head"><p class="eyebrow">Седем системи</p><h2 class="h-l">Какво включва анализът</h2></div><ol class="incl">') +
+      '<p class="eyebrow">' + T('Личен стилов анализ · седем системи') + '</p>' +
+      '<h1 class="h-xxl">' + T('Знаеш цветовете си. А знаеш ли кои те <em>зареждат</em>?') + '</h1>' +
+      '<p class="lede">' + T('Палитрата е само началото. Стилова карта добавя архетипа ти и рождената ти карта и ги превръща в ясни указания: какво да носиш, кога и къде по тялото.') + '</p>' +
+      '<div class="row"><button class="btn light" data-act="tostart" id="cta1">' + T('Към теста') + '</button>' + (has ? '<button class="btn ghost" data-act="go" data-v="result">' + T('Виж резултата си') + '</button>' : '') + '</div>' +
+      '<p class="meta">' + T('Безплатен тест · около 10 минути') + '</p>' +
+      '<div class="fade" aria-hidden="true">' + fade + '</div></header>' +
+
+      '<section class="sec"><div class="sec-head"><p class="eyebrow">' + T('Знаеш ли') + '</p><h2 class="h-xl">' + T('Палитрата вече я имаш. Знаеш ли останалото?') + '</h2></div><ol class="qs">' +
+      qs.map(function (x, i) { return '<li class="q"><span class="q-n" aria-hidden="true">' + (i + 1) + '</span><div><p class="q-t">' + x[0] + '</p><p class="q-a">' + x[1] + '</p></div></li>'; }).join('') + '</ol></section>' +
+
+      '<section class="sec"><div class="sec-head"><p class="eyebrow">' + T('Какво е това') + '</p><h2 class="h-xl">' + T('Седем гледни точки, събрани в една карта') + '</h2>' +
+      '<p class="lede">' + T('Стилова карта е личен онлайн анализ на стила. Тя съчетава цветовия ти сезон, линията на тялото и стиловия ти архетип с Ба Дзъ, западна и ведическа астрология, Хюман дизайн и число Гуа. Резултатът е ръководство само за теб: какво да носиш, кога и защо.') + '</p></div>' +
+      '<div class="mock"><div class="mock-card"><p class="mock-h"><span>' + T('Стилова карта') + '</span><span>' + T('Примерна карта') + '</span></p>' +
+      '<div class="mock-row"><span>' + T('Цветови сезон') + '</span><b>' + D.SEASONS.winter.name + '</b></div><div class="mock-sw">' + seasonStrip('winter', 6) + '</div>' +
+      '<div class="mock-row"><span>' + T('Линия') + '</span><b>' + D.LINES.dc.name + '</b></div>' +
+      '<p class="mock-cut"><span>' + T('Дотук е откъсът · надолу е пълната карта') + '</span></p>' +
+      locked.map(function (x, i) { return '<div class="mock-row lock"><span>' + x + '</span><i style="width:' + [78, 52, 66, 44, 58][i] + 'px"></i></div>'; }).join('') +
+      '</div><p class="small">' + T('Примерна карта. Твоята се смята от твоите отговори и рождени данни.') + '</p></div>' +
+      '<div class="row">' + cta + '</div></section>' +
+
+      '<section class="sec"><div class="sec-head"><p class="eyebrow">' + T('Защо ти е нужна') + '</p><h2 class="h-xl">' + T('За какво ти служи всеки ден') + '</h2></div><div class="why">' +
+      why.map(function (x) { return '<div><b>' + x[0] + '</b><span>' + x[1] + '</span></div>'; }).join('') + '</div></section>' +
+
+      '<section class="sec"><div class="sec-head"><p class="eyebrow">' + T('Седем системи') + '</p><h2 class="h-l">' + T('Какво включва анализът') + '</h2></div><ol class="incl">' +
       incl.map(function (x) { return '<li><div><b>' + x[0] + '</b><span>' + x[1] + '</span></div></li>'; }).join('') + '</ol></section>' +
-      T('<section class="sec"><div class="sec-head"><p class="eyebrow">Резултатът</p><h2 class="h-l">Какво получаваш</h2></div><ul class="gets">') + gets.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></section>' +
-      T('<section class="sec"><div class="sec-head"><p class="eyebrow">Четири стъпки</p><h2 class="h-l">Как протича</h2></div><ol class="plan">') +
+
+      '<section class="sec"><div class="sec-head"><p class="eyebrow">' + T('Резултатът') + '</p><h2 class="h-l">' + T('Какво има в пълната карта') + '</h2></div><ul class="gets">' + gets.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></section>' +
+
+      '<section class="outro" id="outro"><p class="eyebrow">' + T('Следващата страница') + '</p><h2 class="h-xl">' + T('Ако вече те заинтригувах, продължи с теста') + '</h2>' +
+      '<ol class="path"><li><b>' + T('Тестът') + '</b><span>' + T('Безплатен, около 10 минути') + '</span></li><li><b>' + T('Откъсът') + '</b><span>' + T('Веднага виждаш част от картата си') + '</span></li><li><b>' + T('Пълната карта') + '</b><span>' + priceNow() + T(', еднократно, ако решиш') + '</span></li></ol>' +
+      '<div class="row">' + cta + '</div><p class="meta">' + T('Плащаш само ако поискаш пълната карта. Без абонамент.') + '</p></section>' +
+      '<div class="stick" id="stick"><span>' + T('Безплатен тест · около 10 минути') + '</span><button class="btn primary" data-act="tostart" tabindex="-1">' + T('Към теста') + '</button></div>' +
+      '</div>';
+  }
+  function viewStart() {
+    var has = canGo('result');
+    return '<div class="screen">' + T('<div class="top"><button class="brand" data-act="go" data-v="intro">Стилова карта</button>') + '<div class="top-r">' + langBtn() + '</div></div>' +
+      '<header class="sec-head"><p class="eyebrow">' + T('Преди да започнем') + '</p><h1 class="h-xl">' + T('Четири кратки стъпки до твоята карта') + '</h1></header>' +
+      T('<div class="field"><span class="lbl">Ти си</span><div class="chips big" role="group" aria-label="Пол">') +
+      '<button type="button" class="chip" data-act="sex" data-v="f" aria-pressed="' + (st.sex === 'f') + T('">Жена</button>') +
+      '<button type="button" class="chip" data-act="sex" data-v="m" aria-pressed="' + (st.sex === 'm') + T('">Мъж</button></div>') +
+      T('<p class="small">От избора зависят формите в текстовете, архетипите, визиите и числото Гуа.</p></div>') +
+      '<section class="sec"><div class="sec-head"><h2 class="h-l">' + T('Как протича') + '</h2></div><ol class="plan">' +
       T('<li><div><b>Данни за раждане</b><span>Дата, час и място. От тях се смятат картите.</span></div></li>') +
       T('<li><div><b>Цветови сезон</b><span>По снимка, с въпроси или директно, ако го знаеш.</span></div></li>') +
       T('<li><div><b>Линия</b><span>Дванадесет въпроса с рисунки за фигурата и лицето.</span></div></li>') +
       T('<li><div><b>Архетип</b><span>Девет въпроса за това какво излъчваш.</span></div></li>') +
       T('</ol><p class="note">Отговорите се пазят само на това устройство. Снимката не се запазва.') + (IS_SITE ? T(' <a href="terms.html">Общи условия</a> · <a href="privacy.html">Поверителност</a>') : '') + '</p></section>' +
-      T('<section class="sec startbox" id="start"><div class="sec-head"><h2 class="h-l">Започни</h2></div>') +
-      T('<div class="field"><span class="lbl">Ти си</span><div class="chips" role="group" aria-label="Пол">') +
-      '<button type="button" class="chip" data-act="sex" data-v="f" aria-pressed="' + (st.sex === 'f') + T('">Жена</button>') +
-      '<button type="button" class="chip" data-act="sex" data-v="m" aria-pressed="' + (st.sex === 'm') + T('">Мъж</button></div>') +
-      T('<p class="small">От избора зависят формите в текстовете, архетипите, визиите и числото Гуа.</p></div>') +
-      '<div class="price"><b>' + priceTag() + T('</b><span>Тестовете и кратък преглед на резултата са безплатни. Пълният резултат струва ') + priceNow() + T(', еднократно. ') + promoLine() + '</span></div>' +
-      '<div class="row"><button class="btn primary" data-act="start"' + (st.sex ? '' : ' disabled') + '>' + (has ? T('Започни отначало') : T('Започни')) + '</button>' + (st.sex ? '' : T('<span class="small">Избери „Жена“ или „Мъж“, за да започнеш.</span>')) + '</div></section>' +
+      '<section class="sec startbox"><div class="price"><b>' + priceTag() + T('</b><span>Тестовете и кратък преглед на резултата са безплатни. Пълният резултат струва ') + priceNow() + T(', еднократно. ') + promoLine() + '</span></div>' +
+      '<div class="row"><button class="btn primary wide" data-act="start"' + (st.sex ? '' : ' disabled') + '>' + (has ? T('Започни отначало') : T('Започни теста')) + '</button>' + (has ? '<button class="btn" data-act="go" data-v="result">' + T('Виж резултата си') + '</button>' : '') + (st.sex ? '' : '<span class="small">' + T('Избери „Жена“ или „Мъж“, за да продължиш.') + '</span>') + '</div></section>' +
       '</div>';
+  }
+  function stickSetup() {
+    var s = document.getElementById('stick'), a = document.getElementById('cta1'), o = document.getElementById('outro');
+    if (!s || !a || !o || !('IntersectionObserver' in window)) return;
+    var seen = { a: true, o: false };
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { seen[e.target === a ? 'a' : 'o'] = e.isIntersecting; });
+      var on = !seen.a && !seen.o; s.classList.toggle('on', on);
+      var b = s.querySelector('button'); if (b) b.tabIndex = on ? 0 : -1;
+    });
+    io.observe(a); io.observe(o);
   }
 
   /* ---------- birth ---------- */
@@ -458,8 +510,9 @@
     I18N.lang = st.lang === 'en' ? 'en' : 'bg';
     document.documentElement.lang = I18N.lang; app.lang = I18N.lang; document.title = T('Стилова карта');
     var vw = st.view;
-    if (vw !== 'intro' && !canGo(vw)) vw = st.view = 'intro';
-    app.innerHTML = vw === 'birth' ? viewBirth() : vw === 'season' ? viewSeason() : vw === 'line' ? viewLine() : vw === 'arch' ? viewArch() : vw === 'result' ? viewResult() : viewIntro();
+    if (vw !== 'intro' && vw !== 'start' && !canGo(vw)) vw = st.view = 'intro';
+    app.innerHTML = vw === 'birth' ? viewBirth() : vw === 'season' ? viewSeason() : vw === 'line' ? viewLine() : vw === 'arch' ? viewArch() : vw === 'result' ? viewResult() : vw === 'start' ? viewStart() : viewIntro();
+    if (vw === 'intro') stickSetup();
     var qh = document.getElementById('qh'); if (qh) qh.focus({ preventScroll: true });
     drawPhoto();
   }
@@ -470,7 +523,7 @@
     if (e.target.id === 'pcv') { tapPhoto(e, e.target); return; }
     var b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
     var a = b.dataset.act, val = b.dataset.v;
-    if (a === 'go') { if (val === 'intro' || canGo(val)) go(val); }
+    if (a === 'go') { if (val === 'intro' || val === 'start' || canGo(val)) go(val); }
     else if (a === 'start') { if (canGo('result')) { var sx = st.sex, lg = st.lang; st = fresh(); st.sex = sx; st.lang = lg; try { localStorage.removeItem(KEY); } catch (er) { } } mem.cacheKey = null; mem.err = ''; go('birth'); }
     else if (a === 'sex') { st.sex = val; st.birth.sex = val; mem.cacheKey = null; save(); var ys = window.scrollY; render(); try { window.scrollTo(0, ys); } catch (er) { } }
     else if (a === 'manual') { st.birth.manual = b.dataset.on === '1'; if (st.birth.manual) st.birth.place = null; mem.err = ''; save(); render(); }
@@ -483,7 +536,7 @@
     else if (a === 'retry') { mem.rep = null; render(); }
     else if (a === 'preview') { mem.preview = true; render(); try { window.scrollTo(0, 0); } catch (er) { } }
     else if (a === 'unpreview') { mem.preview = false; render(); try { window.scrollTo(0, 0); } catch (er) { } }
-    else if (a === 'tostart') { var sb = document.getElementById('start'); if (sb) sb.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }
+    else if (a === 'tostart') go('start');
     else if (a === 'lang') { st.lang = I18N.lang === 'en' ? 'bg' : 'en'; save(); var yl = window.scrollY; render(); try { window.scrollTo(0, yl); } catch (er) { } }
     else if (a === 'analyse') analyse();
     else if (a === 'ptarget') { mem.target = val; var y2 = window.scrollY; render(); try { window.scrollTo(0, y2); } catch (er) { } }
