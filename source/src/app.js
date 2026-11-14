@@ -485,14 +485,38 @@
     if (R.error) return out + '<p class="err" role="alert">' + esc(R.error) + T('</p><div class="row"><button class="btn" data-act="retry">Опитай отново</button><button class="link" data-act="go" data-v="birth">Промени данните</button></div></div>');
     if (R.full) {
       if (!R.paid) out += T('<p class="banner">Тестов режим: така изглежда пълният резултат след плащане. <button class="link" data-act="unpreview">Обратно към прегледа</button></p>');
-      return out + R.full.html +
-        T('<div class="foot"><div class="row"><button class="btn primary" data-act="copy">Копирай резултата</button><button class="btn" data-act="go" data-v="birth">Промени данните</button></div>') +
+      return out + '<div class="print-only print-head"><span>' + T('Стилова карта') + '</span><span>' + todayStr() + '</span></div>' + R.full.html +
+        '<div class="print-only print-foot"><span>' + T('Стилова карта') + '</span><span>' + T('Личен стилов анализ') + ' · ' + todayStr() + '</span></div>' +
+        '<div class="foot"><div class="row"><button class="btn primary" data-act="pdf">' + T('Запази като PDF') + '</button><button class="btn" data-act="copy">' + T('Копирай резултата') + '</button></div>' +
+        '<p class="small">' + pdfHint() + '</p>' +
+        '<div class="row"><button class="btn ghost" data-act="go" data-v="birth">' + T('Промени данните') + '</button></div>' +
         (mem.toast ? '<p class="toast" role="status">' + mem.toast + '</p>' : '') +
         T('<button class="link" data-act="reset">Изтрий и започни отначало</button></div></div>');
     }
     return out + R.teaser.html + T('<div class="row"><button class="link" data-act="go" data-v="birth">Промени данните</button></div>') +
       (R.note ? '<p class="err" role="alert">' + esc(R.note) + '</p>' : '') + payCard(R) + '</div>';
   }
+  /* PDF: the browser's own print engine saves the full result as a PDF (vector text, real colours). All sections are opened first. */
+  var UA = navigator.userAgent || '';
+  var IN_APP = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|Messenger|TikTok|musical_ly|Bytedance|Line\//i.test(UA);
+  var IOS = /iPad|iPhone|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function todayStr() { var d = new Date(); return ('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + d.getFullYear(); }
+  function pdfHint() {
+    if (IN_APP) return T('Вграденият браузър на Instagram и Facebook не запазва PDF. Отвори менюто горе вдясно и избери „Отвори в браузър“, или използвай „Копирай резултата“.');
+    if (IOS) return T('Ще се отвори прозорецът за печат. Натисни иконата за споделяне горе и избери „Запази във Файлове“.');
+    return T('Ще се отвори прозорецът за печат. За принтер избери „Запази като PDF“.');
+  }
+  function openAll() { [].forEach.call(document.querySelectorAll('details'), function (d) { d.open = true; }); }
+  var oldTitle = null;
+  function savePdf() {
+    openAll();
+    var h = document.querySelector('.res-head h1');
+    oldTitle = document.title;
+    document.title = T('Стилова карта') + (h ? ' – ' + h.textContent.trim() : '');
+    try { window.print(); } catch (e) { mem.toast = T('Браузърът не позволи запазване. Опитай от Chrome или Safari.'); render(); }
+  }
+  window.addEventListener('beforeprint', openAll);
+  window.addEventListener('afterprint', function () { if (oldTitle !== null) { document.title = oldTitle; oldTitle = null; } });
   function startCheckout() {
     if (!CONFIG.checkoutReady) { mem.payNote = T('Плащането ще бъде свързано, когато сайтът тръгне.'); render(); return; }
     if (!mem.consent || mem.paying) return;
@@ -577,6 +601,7 @@
     else if (a === 'aknow') { st.arch.pick = true; save(); render(); }
     else if (a === 'aredo') { st.arch = fresh().arch; save(); render(); }
     else if (a === 'goto') { var el = document.getElementById(b.dataset.id); if (el && el.tagName === 'DETAILS') el.open = true; if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }
+    else if (a === 'pdf') savePdf();
     else if (a === 'copy') {
       var txt = mem.rep && mem.rep.full ? mem.rep.full.text : '';
       var ok = function () { mem.toast = T('Копирано. Можеш да го поставиш в бележка или съобщение.'); render(); var d = document.getElementById('data'); if (d) d.scrollIntoView(); };

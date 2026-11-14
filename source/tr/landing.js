@@ -1,4 +1,12 @@
 module.exports={
+"Запази като PDF":"Save as PDF",
+"Копирай резултата":"Copy the result",
+"Промени данните":"Change your details",
+"Личен стилов анализ":"Personal style analysis",
+"Вграденият браузър на Instagram и Facebook не запазва PDF. Отвори менюто горе вдясно и избери „Отвори в браузър“, или използвай „Копирай резултата“.":"The built-in Instagram and Facebook browser cannot save a PDF. Open the menu at the top right and choose “Open in browser”, or use “Copy the result”.",
+"Ще се отвори прозорецът за печат. Натисни иконата за споделяне горе и избери „Запази във Файлове“.":"The print window will open. Tap the share icon at the top and choose “Save to Files”.",
+"Ще се отвори прозорецът за печат. За принтер избери „Запази като PDF“.":"The print window will open. As the printer, choose “Save as PDF”.",
+"Браузърът не позволи запазване. Опитай от Chrome или Safari.":"The browser did not allow saving. Try Chrome or Safari.",
 "Кои от твоите цветове подхранват <em>енергията ти</em>?":"Which of your colours feed <em>your energy</em>?",
 "В картата: цветовете, които те подсилват според Ба Дзъ, и кои да носиш по малко.":"In the card: the colours that strengthen you according to Ba Zi, and the ones to wear sparingly.",
 "Кой цвят за кой ден: <em>изява, работа, ежедневие</em>?":"Which colour for which day: <em>the spotlight, work, everyday</em>?",
