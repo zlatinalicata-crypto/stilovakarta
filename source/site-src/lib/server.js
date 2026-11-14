@@ -37,7 +37,7 @@ async function report(event) {
   const bad = R.invalid(inp);
   if (bad) return json(400, { error: bad });
   const h = pay.hash(R.key(inp));
-  const testMode = process.env.TEST_MODE === '1';
+  const testMode = pay.testMode();
   let paid = false, note = null;
   if (body.session) {
     const r = await pay.isPaid(body.session, h);
