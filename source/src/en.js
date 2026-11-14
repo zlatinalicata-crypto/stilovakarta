@@ -1390,5 +1390,7 @@ var EN_DICT = {"Въвеждаща цена до ":"Introductory price until ",
 "Отключи безплатно":"Unlock for free",
 "Това плащане е направено с тестова карта и не отключва резултата.":"This payment was made with a test card and does not unlock the result.",
 "Приемам <a href=\"terms.html\" target=\"_blank\" rel=\"noopener\">Общите условия</a>.</span></label>":"I accept the <a href=\"terms.en.html\" target=\"_blank\" rel=\"noopener\">Terms</a>.</span></label>",
-"Плащането с карта ще бъде включено съвсем скоро.":"Card payment will be available very soon."};
+"Плащането с карта ще бъде включено съвсем скоро.":"Card payment will be available very soon.",
+"Облечи <em>душата си</em>":"Dress your <em>soul</em>",
+"Това, което пасва на физиологичните ти особености, често не е от твоята енергия. С този анализ влизаш в дебрите на душата си: цветовият сезон, линията и архетипът се срещат с рождената ти карта и се превръщат в ясни указания какво да носиш, кога и къде по тялото.":"What suits your physical features is often not what matches your energy. This analysis takes you into the depths of your soul: your colour season, body line and archetype meet your birth chart and turn into clear guidance on what to wear, when, and where on the body."};
 if (typeof module !== "undefined") module.exports = EN_DICT;
