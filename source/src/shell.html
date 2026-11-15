@@ -376,8 +376,11 @@ body{font-size:10.5pt;line-height:1.45}
 .print-head{justify-content:space-between;font-size:7.5pt;font-weight:600;letter-spacing:.2em;text-transform:uppercase;border-bottom:1px solid #16131A;padding-bottom:8px;margin-bottom:4px}
 .print-head span:last-child{color:var(--muted)}
 .print-foot{justify-content:space-between;font-size:7.5pt;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--line);padding-top:8px;margin-top:10px}
-.fold>summary{padding:10px 0 6px;cursor:default}
-.fold>summary::after{display:none!important}
+.fold>summary{display:block;padding:10px 0 6px;cursor:default}
+/* keep a heading with what follows: the heading cannot break and reserves ~200px below it */
+.sec-head,.fold>summary,.sub>h3,.fold-body>h3{break-inside:avoid;page-break-inside:avoid}
+.sec-head::after,.fold>summary::after,.sub>h3::after,.fold-body>h3::after{content:""!important;display:block!important;height:200px;margin-bottom:-200px}
+p,li,dd{orphans:3;widows:3}
 .fold{break-inside:auto}
 .screen,.fold,.fold-body,.sub,.sec{display:block!important}
 .screen>*+*{margin-top:18px}
@@ -387,7 +390,14 @@ body{font-size:10.5pt;line-height:1.45}
 h1,h2,h3,.h-m,.h-l,.h-xl,summary,.sec-head,.eyebrow{break-after:avoid;page-break-after:avoid}
 .card,.look,.ync,.formula,.pairc,.ptile,.brief,.sig,.kv,.elrow,.sw,.cols2>*,.pillars,.pbar,.fbar,.tstrip,figure,svg,li{break-inside:avoid;page-break-inside:avoid}
 a{color:inherit;text-decoration:none}
+.brief{display:block!important;break-inside:auto!important;page-break-inside:auto!important}
+.brief>div{break-inside:avoid;page-break-inside:avoid}
+.print-foot{break-before:avoid;page-break-before:avoid;break-inside:avoid}
+#data{break-inside:avoid;page-break-inside:avoid}
 }
+/* phone-width printing: stacked grids break badly, so stack them as plain blocks */
+@media print and (max-width:639px){.looks{display:block!important}.looks>.look+.look{margin-top:10px}}
+@media print and (max-width:599px){.cols2,.cards{display:block!important}.cols2>*+*,.cards>*+*{margin-top:12px}}
 @media (prefers-reduced-motion: reduce){.progress i{transition:none}}
 </style>
 </head>
