@@ -1,5 +1,5 @@
 /* Стилова карта: offline cache. Version changes with every build. */
-var CACHE = 'stilova-karta-feaac01a23';
+var CACHE = 'stilova-karta-49d38b047c';
 var ASSETS = ["/", "index.html", "terms.html", "privacy.html", "terms.en.html", "privacy.en.html", "manifest.webmanifest", "fonts/onest-cyrillic-400-normal.woff2", "fonts/onest-cyrillic-500-normal.woff2", "fonts/onest-cyrillic-600-normal.woff2", "fonts/onest-latin-400-normal.woff2", "fonts/onest-latin-500-normal.woff2", "fonts/onest-latin-600-normal.woff2", "fonts/prata-cyrillic-400-normal.woff2", "fonts/prata-latin-400-normal.woff2", "icons/apple-touch-icon.png", "icons/favicon-64.png", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png"];
 
 self.addEventListener('install', function (e) {

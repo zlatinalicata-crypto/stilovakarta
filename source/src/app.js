@@ -136,7 +136,8 @@
       '</div><p class="small">' + T('Примерна карта. Твоята се смята от твоите отговори и рождени данни.') + '</p></div>' +
       '<div class="row">' + cta + '</div></section>' +
 
-      '<section class="sec"><div class="sec-head"><p class="eyebrow">' + T('Защо ти е нужна') + '</p><h2 class="h-xl">' + T('За какво ти служи всеки ден') + '</h2></div><div class="why">' +
+      '<section class="sec"><div class="sec-head"><p class="eyebrow">' + T('Защо ти е нужна') + '</p><h2 class="h-xl">' + T('Гардеробът е пълен, а нямаш какво да облечеш?') + '</h2>' +
+      '<p class="lede">' + T('Идеята не е капсулен гардероб с готов списък дрехи, а филтър по твоята индивидуалност. С него от всичко, което харесваш, избираш онова, което е наистина твое.') + '</p></div><div class="why">' +
       why.map(function (x) { return '<div><b>' + x[0] + '</b><span>' + x[1] + '</span></div>'; }).join('') + '</div></section>' +
 
       '<section class="sec"><div class="sec-head"><p class="eyebrow">' + T('Седем системи') + '</p><h2 class="h-l">' + T('Какво включва анализът') + '</h2></div><ol class="incl">' +
