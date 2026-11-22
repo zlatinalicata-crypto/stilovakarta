@@ -39,13 +39,14 @@
       season: { tab: 'photo', value: null, sub: null, src: null, ai: null, quiz: [], photo: {} },
       line: { answers: [], i: 0, value: null, pick: false, done: false },
       arch: { answers: [], i: 0, primary: null, secondary: null, pick: false, done: false },
-      session: null
+      session: null,
+      gift: { to: '', from: '', msg: '' }, giftSession: null, pendingCode: null
     };
   }
   var st = fresh();
   var mem = { blob: null, work: null, marks: {}, target: 'skin', aiAvail: false, busy: false, status: '', err: '', toast: '', cacheKey: null, cache: null };
   function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { } }
-  function load() { try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.birth && s.season) { var f = fresh(); ['birth', 'season', 'line', 'arch'].forEach(function (k) { f[k] = Object.assign(f[k], s[k] || {}); }); f.view = s.view || 'intro'; f.sex = s.sex || (s.birth && s.birth.sex) || null; f.session = s.session || null; f.lang = s.lang === 'en' || s.lang === 'bg' ? s.lang : null; if (s.qv !== 2) { f.season.quiz = []; if (f.season.src === 'quiz') { f.season.value = null; f.season.sub = null; f.season.src = null; if (f.view !== 'intro') f.view = 'season'; } } return f; } } catch (e) { } return null; }
+  function load() { try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.birth && s.season) { var f = fresh(); ['birth', 'season', 'line', 'arch'].forEach(function (k) { f[k] = Object.assign(f[k], s[k] || {}); }); f.view = s.view || 'intro'; f.sex = s.sex || (s.birth && s.birth.sex) || null; f.session = s.session || null; if (s.gift) f.gift = Object.assign(f.gift, s.gift); f.giftSession = s.giftSession || null; f.pendingCode = s.pendingCode || null; f.lang = s.lang === 'en' || s.lang === 'bg' ? s.lang : null; if (s.qv !== 2) { f.season.quiz = []; if (f.season.src === 'quiz') { f.season.value = null; f.season.sub = null; f.season.src = null; if (f.view !== 'intro') f.view = 'season'; } } return f; } } catch (e) { } return null; }
 
   /* ---------- completeness ---------- */
   function birthOk() {
@@ -114,6 +115,7 @@
     var cta = '<button class="btn primary" data-act="tostart">' + T('Към теста') + '</button>';
     return '<div class="screen intro-screen">' +
       '<header class="hero"><div class="hero-top"><p class="brandmark">' + T('Стилова карта') + '</p>' + langBtn() + '</div>' +
+      (st.pendingCode ? '<p class="gift-note" role="status"><i class="gc-dot" aria-hidden="true"></i><span>' + T('Имаш подаръчна карта. Направи безплатния тест, а кодът ще те чака на резултата.') + '</span></p>' : '') +
       '<p class="eyebrow">' + T('Личен стилов анализ · седем системи') + '</p>' +
       '<h1 class="h-xxl">' + T('Облечи <em>душата си</em>') + '</h1>' +
       '<p class="lede">' + T('Цветът ти харесва. Модерен е. Но твой ли е? С този анализ влизаш в дебрите на душата си и откриваш цветовете на своята енергия. Цветовият сезон, линията и архетипът се срещат с рождената ти карта и се превръщат в ясни указания какво да носиш, кога и къде по тялото.') + '</p>' +
@@ -141,6 +143,10 @@
       incl.map(function (x) { return '<li><div><b>' + x[0] + '</b><span>' + x[1] + '</span></div></li>'; }).join('') + '</ol></section>' +
 
       '<section class="sec"><div class="sec-head"><p class="eyebrow">' + T('Резултатът') + '</p><h2 class="h-l">' + T('Какво има в пълната карта') + '</h2></div><ul class="gets">' + gets.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></section>' +
+
+      '<section class="sec giftsec"><div class="sec-head"><p class="eyebrow">' + T('Подарък') + '</p><h2 class="h-l">' + T('Подари стилова карта') + '</h2>' +
+      '<p class="lede">' + T('За някого, който заслужава повече от поредния шал. Получаваш красива карта за печат с личен код, а с него пълният резултат се отключва безплатно.') + '</p></div>' +
+      '<div class="row"><button class="btn" data-act="go" data-v="gift">' + T('Подари стилова карта') + '</button></div></section>' +
 
       '<section class="outro" id="outro"><p class="eyebrow">' + T('Следващата страница') + '</p><h2 class="h-xl">' + T('Ако вече те заинтригувах, продължи с теста') + '</h2>' +
       '<ol class="path"><li><b>' + T('Тестът') + '</b><span>' + T('Безплатен, около 10 минути') + '</span></li><li><b>' + T('Откъсът') + '</b><span>' + T('Веднага виждаш част от картата си') + '</span></li><li><b>' + T('Пълната карта') + '</b><span>' + T('Еднократна такса: ') + priceNow() + '</span></li></ol>' +
@@ -475,7 +481,8 @@
   function codeBox() {
     if (!CONFIG.checkoutReady) return '';
     var c = mem.code;
-    if (c) return '<p class="small code-ok" role="status">' + (c.free ? T('Кодът отключва пълния резултат безплатно.') : T('Кодът е приложен: −') + c.pct + '%.') + ' <button class="link" data-act="uncode">' + T('Махни кода') + '</button></p>';
+    if (!c && !mem.codeOpen && st.pendingCode && st.view === 'result') { mem.codeOpen = true; if (!mem.codeInput) mem.codeInput = st.pendingCode; }
+    if (c) return '<p class="small code-ok" role="status">' + (c.gift ? T('Подаръчният код отключва пълния резултат.') : c.free ? T('Кодът отключва пълния резултат безплатно.') : T('Кодът е приложен: −') + c.pct + '%.') + ' <button class="link" data-act="uncode">' + T('Махни кода') + '</button></p>';
     if (!mem.codeOpen) return '<div class="row"><button class="link" data-act="codeopen">' + T('Имам код за отстъпка') + '</button></div>';
     return '<div class="code-row"><input class="input" id="code" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" placeholder="' + T('Код') + '" aria-label="' + T('Код за отстъпка') + '" value="' + esc(mem.codeInput || '') + '">' +
       '<button class="btn" data-act="code"' + (mem.codeBusy ? ' disabled' : '') + '>' + T('Приложи') + '</button></div>' +
@@ -485,11 +492,11 @@
     var v = String(mem.codeInput || '').trim();
     if (!v || mem.codeBusy) return;
     mem.codeBusy = true; mem.codeErr = ''; render();
-    fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: v, dry: true, lang: I18N.lang }) })
+    fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: v, dry: true, lang: I18N.lang, input: st.view === 'result' ? inputOf() : null, forGift: st.view === 'gift' }) })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (x) {
         mem.codeBusy = false;
-        if (x.ok && (x.j.free || x.j.pct)) { mem.code = { code: v, free: !!x.j.free, pct: x.j.pct, cents: x.j.cents }; mem.codeOpen = false; mem.payNote = ''; }
+        if (x.ok && (x.j.free || x.j.pct)) { mem.code = { code: v, free: !!x.j.free, gift: !!x.j.gift, pct: x.j.pct, cents: x.j.cents }; mem.codeOpen = false; mem.payNote = ''; }
         else mem.codeErr = x.j.error || T('Този код не е валиден. Провери как е изписан.');
         render();
       })
@@ -508,7 +515,8 @@
     return T('<div class="card hl pay"><p class="eyebrow">Пълен резултат</p><p class="pay-price">') + price + '</p>' + info +
       codeBox() + (soon ? '' : consent + '<div class="row"><button class="btn primary" data-act="pay"' + (CONFIG.checkoutReady && !mem.consent || mem.paying ? ' disabled' : '') + '>' + (mem.paying ? (c && c.free ? T('Отключвам…') : T('Отварям плащането…')) : (c && c.free ? T('Отключи безплатно') : T('Отключи пълния резултат'))) + '</button></div>') +
       (mem.payNote ? '<p class="small" role="status">' + esc(mem.payNote) + '</p>' : '') +
-      (R.testMode ? T('<button class="link" data-act="preview">Тестов режим: виж пълния резултат без плащане</button>') : '') + '</div>';
+      (R.testMode ? T('<button class="link" data-act="preview">Тестов режим: виж пълния резултат без плащане</button>') : '') +
+      (CONFIG.checkoutReady ? '<div class="row"><button class="link" data-act="go" data-v="gift">' + T('Подари стилова карта на някого') + '</button></div>' : '') + '</div>';
   }
   function viewResult() {
     var R = loadReport(), out = '<div class="screen">' + top();
@@ -556,19 +564,119 @@
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (x) {
         if (x.ok && x.j.url) { save(); location.href = x.j.url; return; }
-        if (x.ok && x.j.session) { st.session = x.j.session; mem.paying = false; mem.code = null; mem.rep = null; save(); render(); try { window.scrollTo(0, 0); } catch (er) { } return; }
+        if (x.ok && x.j.session) { st.session = x.j.session; st.pendingCode = null; mem.paying = false; mem.code = null; mem.rep = null; save(); render(); try { window.scrollTo(0, 0); } catch (er) { } return; }
         if (x.j.badCode) mem.code = null;
         mem.paying = false; mem.payNote = x.j.error || T('Плащането не можа да започне. Опитай отново.'); render();
       })
       .catch(function () { mem.paying = false; mem.payNote = T('Няма връзка със сървъра. Опитай отново.'); render(); });
+  }
+  /* ---------- gift card ---------- */
+  /* The buyer types names and a wish, pays, and gets a printable card with a code. The code unlocks one full result. */
+  function giftTop() { return '<div class="screen">' + T('<div class="top"><button class="brand" data-act="go" data-v="intro">Стилова карта</button>') + '<div class="top-r">' + langBtn() + '</div></div>'; }
+  function giftStatus() {
+    if (!IS_SITE || mem.giftReady != null || mem.giftReadyBusy) return;
+    mem.giftReadyBusy = true;
+    fetch('/api/gift', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lang: I18N.lang }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { mem.giftReadyBusy = false; mem.giftReady = j.payReady !== false; if (st.view === 'gift') render(); })
+      .catch(function () { mem.giftReadyBusy = false; mem.giftReady = true; });
+  }
+  function giftField(id, label, val, area) {
+    var lbl = '<label class="lbl" for="g-' + id + '">' + label + ' <small>' + T('(по желание)') + '</small></label>';
+    return '<div class="field">' + lbl + (area ? '<textarea class="input" id="g-' + id + '" maxlength="200" rows="3">' + esc(val) + '</textarea>'
+      : '<input class="input" id="g-' + id + '" type="text" maxlength="40" autocomplete="off" value="' + esc(val) + '">') + '</div>';
+  }
+  function viewGift() {
+    giftStatus();
+    var g = st.gift, c = mem.code && !mem.code.free ? mem.code : null;
+    var price = c ? money(c.cents) + ' <s>' + priceNow() + '</s>' : priceTag();
+    var soon = CONFIG.checkoutReady && mem.giftReady === false;
+    var info = soon ? (promoLine() ? '<p class="small">' + promoLine() + '</p>' : '') + '<p class="banner" role="status">' + T('Плащането с карта ще бъде включено съвсем скоро.') + '</p>'
+      : '<p class="small">' + promoLine() + T(' Еднократно плащане с карта. Картата с кода се отваря веднага след плащането.') + '</p>';
+    var consent = CONFIG.checkoutReady ? '<label class="check consent" for="gconsent"><input type="checkbox" id="gconsent"' + (mem.giftConsent ? ' checked' : '') + '> <span>' +
+      T('Приемам <a href="terms.html" target="_blank" rel="noopener">Общите условия</a>. Неизползван подаръчен код може да бъде върнат до 14 дни след покупката.') + '</span></label>' : '';
+    return giftTop() +
+      '<header class="sec-head"><p class="eyebrow">' + T('Подаръчна карта') + '</p><h1 class="h-xl">' + T('Подари стилова карта') + '</h1>' +
+      '<p class="lede">' + T('Подарък, който не е поредният шал. Получаваш красива карта за печат с личен код, а с него пълният резултат се отключва безплатно.') + '</p></header>' +
+      '<ol class="plan">' + T('<li><div><b>Плащаш</b><span>Еднократно, с карта. Цената е като на пълния резултат.</span></div></li>') +
+      T('<li><div><b>Получаваш картата</b><span>Отваря се веднага, с името, пожеланието и личния код. Принтираш я или я пращаш като PDF.</span></div></li>') +
+      T('<li><div><b>Подаряваш</b><span>Човекът прави безплатния тест и въвежда кода на резултата. Пълната карта се отключва веднага.</span></div></li>') + '</ol>' +
+      '<div class="gift-form">' + giftField('to', T('За кого'), g.to) + giftField('from', T('От кого'), g.from) + giftField('msg', T('Пожелание'), g.msg, true) + '</div>' +
+      '<div class="card hl pay"><p class="eyebrow">' + T('Подаръчна карта') + '</p><p class="pay-price">' + price + '</p>' + info + codeBox() +
+      (soon ? '' : consent + '<div class="row"><button class="btn primary" data-act="giftbuy"' + (CONFIG.checkoutReady && !mem.giftConsent || mem.paying ? ' disabled' : '') + '>' + (mem.paying ? T('Отварям плащането…') : T('Купи подаръчната карта')) + '</button></div>') +
+      (mem.giftNote ? '<p class="small" role="status">' + esc(mem.giftNote) + '</p>' : '') + '</div>' +
+      '<div class="row"><button class="link" data-act="go" data-v="intro">' + T('Към началото') + '</button></div></div>';
+  }
+  function startGiftCheckout() {
+    if (!CONFIG.checkoutReady) { mem.giftNote = T('Плащането ще бъде свързано, когато сайтът тръгне.'); render(); return; }
+    if (!mem.giftConsent || mem.paying) return;
+    mem.paying = true; mem.giftNote = ''; render();
+    var c = mem.code && !mem.code.free ? mem.code.code : null;
+    fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gift: st.gift, consent: true, lang: I18N.lang, code: c }) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) {
+        if (x.ok && x.j.url) { save(); location.href = x.j.url; return; }
+        if (x.j.badCode) mem.code = null;
+        mem.paying = false; mem.giftNote = x.j.error || T('Плащането не можа да започне. Опитай отново.'); render();
+      })
+      .catch(function () { mem.paying = false; mem.giftNote = T('Няма връзка със сървъра. Опитай отново.'); render(); });
+  }
+  function loadGift() {
+    var key = st.giftSession + '|' + I18N.lang;
+    if (mem.gc && mem.gc.key === key) return mem.gc;
+    mem.gc = { key: key, loading: true };
+    fetch('/api/gift', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: st.giftSession, lang: I18N.lang }) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) {
+        if (!mem.gc || mem.gc.key !== key) return;
+        mem.gc = x.ok && x.j.code ? Object.assign({ key: key }, x.j) : { key: key, error: x.j.error || T('Нещо се обърка. Опитай отново.') };
+        if (st.view === 'giftcard') render();
+      })
+      .catch(function () {
+        if (!mem.gc || mem.gc.key !== key) return;
+        mem.gc = { key: key, error: T('Няма връзка със сървъра. Провери интернета и опитай отново.') };
+        if (st.view === 'giftcard') render();
+      });
+    return mem.gc;
+  }
+  function viewGiftCard() {
+    var G = loadGift(), out = giftTop();
+    if (G.loading) return out + '<p class="status" role="status">' + T('Подготвям подаръчната карта…') + '</p></div>';
+    if (G.error) return out + '<p class="err" role="alert">' + esc(G.error) + '</p><div class="row"><button class="btn" data-act="giftretry">' + T('Опитай отново') + '</button><button class="link" data-act="go" data-v="intro">' + T('Към началото') + '</button></div></div>';
+    var card = '<div class="giftcard" id="giftcard">' +
+      '<p class="gc-brand">' + T('Стилова карта') + '</p><p class="gc-eyebrow">' + T('Подаръчна карта') + '</p>' +
+      (G.to ? '<p class="gc-to">' + T('За ') + esc(G.to) + '</p>' : '') +
+      '<p class="gc-title">' + T('Облечи <em>душата си</em>') + '</p>' +
+      (G.msg ? '<p class="gc-msg">' + esc(G.msg) + '</p>' : '') +
+      (G.from ? '<p class="gc-from">' + T('от ') + esc(G.from) + '</p>' : '') +
+      '<div class="gc-code"><span>' + T('Личен код') + '</span><b>' + esc(G.code) + '</b></div>' +
+      '<ol class="gc-how"><li>' + T('Отвори stilovakarta.com и направи безплатния тест.') + '</li><li>' + T('На резултата натисни „Имам код за отстъпка“ и въведи кода.') + '</li><li>' + T('Пълната ти карта се отключва веднага.') + '</li></ol>' +
+      '<p class="gc-url"><i class="gc-dot" aria-hidden="true"></i>stilovakarta.com</p></div>';
+    return out + '<header class="sec-head no-print"><p class="eyebrow">' + T('Подаръчна карта') + '</p><h1 class="h-xl">' + T('Подаръкът е готов') + '</h1>' +
+      '<p class="lede">' + T('Принтирай картата или я запази като PDF и я изпрати. Можеш да пратиш и само линка: той отваря сайта с попълнен код.') + '</p></header>' + card +
+      '<div class="foot"><div class="row"><button class="btn primary" data-act="giftpdf">' + T('Запази като PDF') + '</button><button class="btn" data-act="giftcopy">' + T('Копирай кода') + '</button><button class="btn" data-act="giftlink">' + T('Копирай линка за подарък') + '</button></div>' +
+      '<p class="small">' + pdfHint() + '</p>' +
+      '<p class="small">' + T('Кодът важи за един пълен резултат. Тази страница се отваря отново от същото устройство. Ако загубиш кода, пиши ни на style@stilovakarta.com.') + '</p>' +
+      (mem.toast ? '<p class="toast" role="status">' + mem.toast + '</p>' : '') +
+      '<div class="row"><button class="btn ghost" data-act="giftmore">' + T('Подари още една') + '</button><button class="link" data-act="go" data-v="intro">' + T('Към началото') + '</button></div></div></div>';
+  }
+  function giftPdf() {
+    oldTitle = document.title;
+    document.title = T('Стилова карта') + ' – ' + T('Подаръчна карта');
+    try { window.print(); } catch (e) { mem.toast = T('Браузърът не позволи запазване. Опитай от Chrome или Safari.'); render(); }
+  }
+  function copyText(txt, msg) {
+    var fail = function () { mem.toast = T('Браузърът не позволи копиране.'); render(); };
+    try { navigator.clipboard.writeText(txt).then(function () { mem.toast = msg; render(); }, fail); } catch (er) { fail(); }
   }
   /* ---------- render ---------- */
   function render() {
     I18N.lang = st.lang === 'en' ? 'en' : 'bg';
     document.documentElement.lang = I18N.lang; app.lang = I18N.lang; document.title = T('Стилова карта');
     var vw = st.view;
-    if (vw !== 'intro' && vw !== 'start' && !canGo(vw)) vw = st.view = 'intro';
-    app.innerHTML = vw === 'birth' ? viewBirth() : vw === 'season' ? viewSeason() : vw === 'line' ? viewLine() : vw === 'arch' ? viewArch() : vw === 'result' ? viewResult() : vw === 'start' ? viewStart() : viewIntro();
+    if (vw === 'giftcard' && !st.giftSession) vw = st.view = 'intro';
+    if (vw !== 'intro' && vw !== 'start' && vw !== 'gift' && vw !== 'giftcard' && !canGo(vw)) vw = st.view = 'intro';
+    app.innerHTML = vw === 'gift' ? viewGift() : vw === 'giftcard' ? viewGiftCard() : vw === 'birth' ? viewBirth() : vw === 'season' ? viewSeason() : vw === 'line' ? viewLine() : vw === 'arch' ? viewArch() : vw === 'result' ? viewResult() : vw === 'start' ? viewStart() : viewIntro();
     if (vw === 'intro') stickSetup();
     var qh = document.getElementById('qh'); if (qh) qh.focus({ preventScroll: true });
     drawPhoto();
@@ -580,7 +688,13 @@
     if (e.target.id === 'pcv') { tapPhoto(e, e.target); return; }
     var b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
     var a = b.dataset.act, val = b.dataset.v;
-    if (a === 'go') { if (val === 'intro' || val === 'start' || canGo(val)) go(val); }
+    if (a === 'go') { if (val === 'intro' || val === 'start' || val === 'gift' || canGo(val)) { if (val === 'gift' && mem.code && mem.code.free) mem.code = null; mem.toast = ''; go(val); } }
+    else if (a === 'giftbuy') startGiftCheckout();
+    else if (a === 'giftpdf') giftPdf();
+    else if (a === 'giftcopy') { if (mem.gc && mem.gc.code) copyText(mem.gc.code, T('Кодът е копиран.')); }
+    else if (a === 'giftlink') { if (mem.gc && mem.gc.code) copyText(location.origin + '/?code=' + encodeURIComponent(mem.gc.code), T('Линкът е копиран. Той отваря сайта с попълнен код.')); }
+    else if (a === 'giftretry') { mem.gc = null; render(); }
+    else if (a === 'giftmore') { st.gift = fresh().gift; mem.giftConsent = false; mem.giftNote = ''; mem.toast = ''; go('gift'); }
     else if (a === 'start') { if (canGo('result')) { var sx = st.sex, lg = st.lang; st = fresh(); st.sex = sx; st.lang = lg; try { localStorage.removeItem(KEY); } catch (er) { } } mem.cacheKey = null; mem.err = ''; go('birth'); }
     else if (a === 'sex') { st.sex = val; st.birth.sex = val; mem.cacheKey = null; save(); var ys = window.scrollY; render(); try { window.scrollTo(0, ys); } catch (er) { } }
     else if (a === 'manual') { st.birth.manual = b.dataset.on === '1'; if (st.birth.manual) st.birth.place = null; mem.err = ''; save(); render(); }
@@ -648,6 +762,7 @@
   app.addEventListener('keydown', function (e) { if (e.target.id === 'code' && e.key === 'Enter') { e.preventDefault(); applyCode(); } });
   app.addEventListener('input', function (e) {
     var t = e.target, b = st.birth;
+    if (t.id === 'g-to' || t.id === 'g-from' || t.id === 'g-msg') { st.gift[t.id.slice(2)] = t.value; save(); return; }
     if (t.id === 'code') { mem.codeInput = t.value; if (mem.codeErr) { mem.codeErr = ''; var er = t.parentNode.nextSibling; if (er && er.className === 'err') er.remove(); } return; }
     if (t.id === 'b-date') b.date = t.value;
     else if (t.id === 'b-time') b.time = t.value;
@@ -661,6 +776,7 @@
     var t = e.target, b = st.birth;
     if (t.id === 'b-notime') { b.noTime = t.checked; mem.cacheKey = null; save(); render(); }
     else if (t.id === 'b-tz') { b.mtz = t.value; mem.cacheKey = null; save(); }
+    else if (t.id === 'gconsent') { mem.giftConsent = t.checked; var gb = app.querySelector('[data-act="giftbuy"]'); if (gb) gb.disabled = !t.checked || !!mem.paying; }
     else if (t.id === 'consent') { mem.consent = t.checked; var pb = app.querySelector('[data-act="pay"]'); if (pb) pb.disabled = !t.checked; }
     else if (t.id === 'b-date') { b.date = t.value; save(); }
     else if (t.id === 'b-time') { b.time = t.value; save(); }
@@ -685,9 +801,13 @@
   if (!st.lang) st.lang = /^bg/i.test(navigator.language || 'bg') ? 'bg' : 'en';
   try {
     var qs = new URLSearchParams(location.search);
+    /* ?code=… comes from a gift link: the code waits on the result. ?gift opens the gift page, ?gift_session the bought card. */
+    if (qs.get('code')) { st.pendingCode = qs.get('code').slice(0, 40); save(); }
+    if (qs.get('gift_session')) { st.giftSession = qs.get('gift_session'); st.view = 'giftcard'; save(); }
+    else if (qs.get('gift')) { st.view = 'gift'; save(); if (qs.get('cancelled')) mem.giftNote = T('Плащането е прекъснато. Можеш да опиташ отново.'); }
     if (qs.get('session_id')) { st.session = qs.get('session_id'); st.view = 'result'; save(); }
-    if (qs.get('cancelled')) { st.view = 'result'; mem.payNote = T('Плащането е прекъснато. Можеш да опиташ отново.'); }
-    if (qs.get('session_id') || qs.get('cancelled')) history.replaceState(null, '', location.pathname);
+    if (qs.get('cancelled') && !qs.get('gift')) { st.view = 'result'; mem.payNote = T('Плащането е прекъснато. Можеш да опиташ отново.'); }
+    if (['session_id', 'cancelled', 'gift', 'gift_session', 'code'].some(function (k) { return qs.has(k); })) history.replaceState(null, '', location.pathname);
   } catch (e) { }
   render();
 })();

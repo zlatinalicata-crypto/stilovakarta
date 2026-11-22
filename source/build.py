@@ -100,7 +100,7 @@ for a in assets[1:]:
 (out / 'lib').mkdir()
 for f in ['en.js', 'i18n.js', 'engine.js', 'data.js', 'palette.js', 'figure.js', 'report.js']:
     shutil.copy(SRC / f, out / 'lib' / f)
-for f in ['lib/pay.js', 'lib/server.js', 'netlify/functions/report.js', 'netlify/functions/checkout.js', 'netlify.toml', 'tools/dev-server.js', 'README.md']:
+for f in ['lib/pay.js', 'lib/server.js', 'netlify/functions/report.js', 'netlify/functions/checkout.js', 'netlify/functions/gift.js', 'netlify.toml', 'tools/dev-server.js', 'README.md']:
     (out / f).parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(SS / f, out / f)
 (out / 'package.json').write_text(json.dumps({
