@@ -86,6 +86,10 @@ pub_dict = 'var EN_DICT = ' + json.dumps({k: endict[k] for k in keys['public'] +
 site_html = site_html.replace('/*__SCRIPTS__*/', pub_dict + '\n' + read('i18n.js') + '\nvar DATA = I18N.wrap(' + pubdata + ", ['fam', 'CITIES', 'TZS', 'ZONES']);\n" + read('scoring.js') + '\n' + read('icons.js') + '\n' + read('app.js'))
 (pub / 'index.html').write_text(site_html)
 
+# place search files (GeoNames, made by mkplaces.py); not in the offline cache, the page loads them as needed
+if (ROOT / 'places').exists():
+    shutil.copytree(ROOT / 'places', pub / 'places')
+
 today = datetime.date.today().strftime('%d.%m.%Y')
 for f in ['terms.html', 'privacy.html', 'terms.en.html', 'privacy.en.html']:
     shutil.copy(SS / 'public-src' / f, pub / f)

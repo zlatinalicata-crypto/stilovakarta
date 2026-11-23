@@ -16,7 +16,26 @@ var makeReport = function (D, P, E, F) {
   function v(sign) { return /^[ВФвф]/.test(sign) ? T('във ') + sign : T('в ') + sign; }
   function deg(x) { return Math.floor(x) + '°'; }
   function fmtDate(ms) { var d = new Date(ms); return ('0' + d.getUTCDate()).slice(-2) + '.' + ('0' + (d.getUTCMonth() + 1)).slice(-2) + '.' + d.getUTCFullYear(); }
-  function placeLabel(p) { return I18N.city(p[0]) + (p[4] ? ', ' + T(p[4]) : '') + ' · ' + Math.abs(p[1]).toFixed(2) + '° ' + (p[1] >= 0 ? T('с.ш.') : T('ю.ш.')) + ', ' + Math.abs(p[2]).toFixed(2) + '° ' + (p[2] >= 0 ? T('и.д.') : T('з.д.')); }
+  var regionNames = {};
+  function countryName(cc) {
+    var l = I18N.lang === 'en' ? 'en' : 'bg';
+    try { if (!regionNames[l]) regionNames[l] = new Intl.DisplayNames([l], { type: 'region' }); return regionNames[l].of(cc) || cc; } catch (e) { return cc; }
+  }
+  /* hand list [name, lat, lon, tz, 'България'|''] or GeoNames [name, lat, lon, tz, region, id, country code] */
+  function placeSub(p) {
+    if (!p[5]) return p[4] ? T(p[4]) : '';
+    var reg = p[4] ? I18N.city(p[4]) : '';
+    if (reg && p[6] === 'BG') reg = I18N.lang === 'en' ? reg + T(' (област)') : (/-град$/.test(reg) ? reg : T('обл. ') + reg);
+    return (reg ? reg + ', ' : '') + countryName(p[6]);
+  }
+  /* a GeoNames place comes from the page: keep it only if every part looks right */
+  function placeOk(p) {
+    var lat = +p[1], lon = +p[2], txt = function (x) { return String(x == null ? '' : x).replace(/[<>"&]/g, '').slice(0, 80); };
+    if (!/^(g|bg|md|ua)\d{1,9}$/.test(String(p[5])) || !/^[A-Z]{2}$/.test(String(p[6])) || !txt(p[0])) return null;
+    if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180 || D.TZS.indexOf(p[3]) < 0) return null;
+    return [txt(p[0]), lat, lon, p[3], txt(p[4]), String(p[5]), String(p[6])];
+  }
+  function placeLabel(p) { var sub = placeSub(p); return I18N.city(p[0]) + (sub ? ', ' + sub : '') + ' · ' + Math.abs(p[1]).toFixed(2) + '° ' + (p[1] >= 0 ? T('с.ш.') : T('ю.ш.')) + ', ' + Math.abs(p[2]).toFixed(2) + '° ' + (p[2] >= 0 ? T('и.д.') : T('з.д.')); }
   function hasBirth(b) {
     if (!b || b.skip || !/^\d{4}-\d{2}-\d{2}$/.test(b.date || '')) return false;
     if (!b.noTime && !/^\d{2}:\d{2}$/.test(b.time || '')) return false;
@@ -42,7 +61,7 @@ var makeReport = function (D, P, E, F) {
     x = x || {};
     var b = x.birth || {}, s = x.season || {}, l = x.line || {}, a = x.arch || {};
     var city = null;
-    if (Array.isArray(b.place)) city = D.CITIES.filter(function (c) { return c[0] === b.place[0]; })[0] || null;
+    if (Array.isArray(b.place)) city = b.place[5] ? placeOk(b.place) : D.CITIES.filter(function (c) { return c[0] === b.place[0]; })[0] || null;
     var inp = {
       sex: x.sex === 'm' ? 'm' : 'f',
       birth: {
@@ -66,7 +85,7 @@ var makeReport = function (D, P, E, F) {
   /* Fingerprint of the inputs that shape the result: a payment unlocks only these. */
   function key(inp) {
     var b = inp.birth;
-    return JSON.stringify([inp.sex, b.skip ? null : [b.date, b.noTime ? null : b.time, b.manual ? [b.mlat, b.mlon, b.mtz] : (b.place && b.place[0])],
+    return JSON.stringify([inp.sex, b.skip ? null : [b.date, b.noTime ? null : b.time, b.manual ? [b.mlat, b.mlon, b.mtz] : (b.place && (b.place[5] || b.place[0]))],
       inp.season.value, inp.line.value, inp.arch.primary, inp.arch.secondary]);
   }
 
