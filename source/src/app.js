@@ -35,7 +35,7 @@
   function fresh() {
     return {
       view: 'intro', sex: null, qv: 2, lang: null,
-      birth: { date: '', time: '', noTime: false, place: null, manual: false, mlat: '', mlon: '', mtz: 'Europe/Sofia', sex: 'f', skip: false },
+      birth: { date: '', time: '', noTime: false, place: null, manual: false, mlat: '', mlon: '', mcountry: '', mtz: '', sex: 'f', skip: false },
       season: { tab: 'photo', value: null, sub: null, src: null, ai: null, quiz: [], photo: {} },
       line: { answers: [], i: 0, value: null, pick: false, done: false },
       arch: { answers: [], i: 0, primary: null, secondary: null, pick: false, done: false },
@@ -54,9 +54,24 @@
     if (b.skip) return true;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(b.date)) return false;
     if (!b.noTime && !/^\d{2}:\d{2}$/.test(b.time)) return false;
-    if (b.manual) return isFinite(parseFloat(b.mlat)) && isFinite(parseFloat(b.mlon)) && Math.abs(parseFloat(b.mlat)) <= 90 && Math.abs(parseFloat(b.mlon)) <= 180;
+    if (b.manual) return coordsOk() && zoneOk();
     return !!b.place;
   }
+  function coordsOk() {
+    var b = st.birth;
+    return isFinite(parseFloat(b.mlat)) && isFinite(parseFloat(b.mlon)) && Math.abs(parseFloat(b.mlat)) <= 90 && Math.abs(parseFloat(b.mlon)) <= 180;
+  }
+  /* the time zone of a manual place comes from its country */
+  function zoneOk() {
+    var b = st.birth, zs = b.mcountry && D.ZONES[b.mcountry];
+    return !!zs && zs.indexOf(b.mtz) >= 0;
+  }
+  var regionNames = {};
+  function countryName(cc) {
+    var l = I18N.lang === 'en' ? 'en' : 'bg';
+    try { if (!regionNames[l]) regionNames[l] = new Intl.DisplayNames([l], { type: 'region' }); return regionNames[l].of(cc) || cc; } catch (e) { return cc; }
+  }
+  function zoneLabel(z) { return z.slice(z.indexOf('/') + 1).replace(/_/g, ' '); }
   var done = {
     birth: birthOk,
     season: function () { return !!st.season.value; },
@@ -202,11 +217,19 @@
   function placeLabel(p) { return I18N.city(p[0]) + (p[4] ? ', ' + T(p[4]) : '') + ' · ' + Math.abs(p[1]).toFixed(2) + '° ' + (p[1] >= 0 ? T('с.ш.') : T('ю.ш.')) + ', ' + Math.abs(p[2]).toFixed(2) + '° ' + (p[2] >= 0 ? T('и.д.') : T('з.д.')); }
   function viewBirth() {
     var b = st.birth;
-    var tzOpts = D.TZS.map(function (z) { return '<option value="' + z + '"' + (b.mtz === z ? ' selected' : '') + '>' + z + '</option>'; }).join('');
-    for (var o = -12; o <= 14; o++) { var val = 'off:' + o; tzOpts += '<option value="' + val + '"' + (b.mtz === val ? ' selected' : '') + '>UTC' + (o >= 0 ? '+' : '') + o + '</option>'; }
+    var lang = I18N.lang === 'en' ? 'en' : 'bg';
+    var cOpts = '<option value="">' + T('Избери държава') + '</option>' + Object.keys(D.ZONES).map(function (cc) { return [cc, countryName(cc)]; })
+      .sort(function (x, y) { return x[1].localeCompare(y[1], lang); })
+      .map(function (c) { return '<option value="' + c[0] + '"' + (b.mcountry === c[0] ? ' selected' : '') + '>' + esc(c[1]) + '</option>'; }).join('');
+    var zs = b.mcountry ? D.ZONES[b.mcountry] || [] : [];
+    var tzPart = !zs.length ? T('<p class="small">По държавата се определя часовата зона, заедно със старите промени на часа.</p>')
+      : zs.length === 1 ? '<p class="small">' + T('Часова зона: ') + esc(zs[0]) + T('. Отчита и старите промени на часа в държавата.') + '</p>'
+      : T('<div class="field"><label for="b-tz">Часова зона</label><select class="input" id="b-tz">') + '<option value="">' + T('Избери най-близкия град') + '</option>' +
+        zs.map(function (z) { return '<option value="' + z + '"' + (b.mtz === z ? ' selected' : '') + '>' + esc(zoneLabel(z)) + '</option>'; }).join('') + '</select></div>';
     var place = b.manual
       ? T('<div class="grid2"><div class="field"><label for="b-lat">Ширина</label><input class="input" id="b-lat" inputmode="decimal" placeholder="44.12" value="') + esc(b.mlat) + T('"></div><div class="field"><label for="b-lon">Дължина</label><input class="input" id="b-lon" inputmode="decimal" placeholder="27.27" value="') + esc(b.mlon) + '"></div></div>' +
-        T('<div class="field"><label for="b-tz">Часова зона</label><select class="input" id="b-tz">') + tzOpts + T('</select><p class="small">Южна ширина и западна дължина се пишат с минус.</p></div>') +
+        T('<p class="small">В градуси с десетична точка: 28°18′ се пише 28.30. Южна ширина и западна дължина се пишат с минус.</p>') +
+        T('<div class="field"><label for="b-country">Държава</label><select class="input" id="b-country">') + cOpts + '</select>' + tzPart + '</div>' +
         T('<button type="button" class="link" data-act="manual" data-on="0">Избери от списъка с градове</button>')
       : (b.place
         ? '<div class="picked"><span>' + esc(placeLabel(b.place)) + T('</span><button type="button" class="link" data-act="unplace">Смени</button></div>')
@@ -244,7 +267,10 @@
     b.skip = false;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(b.date)) mem.err = T('Въведи дата на раждане.');
     else if (!b.noTime && !/^\d{2}:\d{2}$/.test(b.time)) mem.err = T('Въведи час или отметни „Не знам часа“.');
-    else if (!birthOk()) mem.err = b.manual ? T('Въведи ширина и дължина като числа, напр. 44.12 и 27.27.') : T('Избери място от списъка.');
+    else if (!birthOk()) mem.err = !b.manual ? T('Избери място от списъка.')
+      : !coordsOk() ? T('Въведи ширина и дължина като числа, напр. 44.12 и 27.27.')
+      : !b.mcountry ? T('Избери държавата. По нея се определя часовата зона.')
+      : T('Избери часовата зона: най-близкия град до мястото на раждане.');
     else mem.err = '';
     if (mem.err) { render(); return; }
     mem.cacheKey = null;
@@ -790,6 +816,7 @@
     var t = e.target, b = st.birth;
     if (t.id === 'b-notime') { b.noTime = t.checked; mem.cacheKey = null; save(); render(); }
     else if (t.id === 'b-tz') { b.mtz = t.value; mem.cacheKey = null; save(); }
+    else if (t.id === 'b-country') { b.mcountry = t.value; var zl = D.ZONES[t.value] || []; b.mtz = zl.length === 1 ? zl[0] : ''; mem.err = ''; mem.cacheKey = null; save(); render(); }
     else if (t.id === 'gconsent') { mem.giftConsent = t.checked; var gb = app.querySelector('[data-act="giftbuy"]'); if (gb) gb.disabled = !t.checked || !!mem.paying; }
     else if (t.id === 'consent') { mem.consent = t.checked; var pb = app.querySelector('[data-act="pay"]'); if (pb) pb.disabled = !t.checked; }
     else if (t.id === 'b-date') { b.date = t.value; save(); }
