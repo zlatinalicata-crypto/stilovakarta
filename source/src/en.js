@@ -1481,5 +1481,9 @@ var EN_DICT = {"Метал и камъни, подбрани по елемент
 "Арциз":"Artsyz",
 "Тарутино":"Tarutyne",
 "Белгород-Днестровски":"Bilhorod-Dnistrovskyi",
-"Килия":"Kiliia"};
+"Килия":"Kiliia",
+" (област)":" Province",
+"обл. ":"",
+"<p class=\"small\">Всички населени места в България и Молдова и градовете по света с над 1000 жители. Места в чужбина търси и на латиница, напр. Florești. Данни: <a href=\"https://www.geonames.org\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit\">GeoNames</a>.</p>":"<p class=\"small\">Every settlement in Bulgaria and Moldova, and the towns and cities of the world with over 1,000 inhabitants. Search for places abroad in Latin letters too, e.g. Florești. Data: <a href=\"https://www.geonames.org\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit\">GeoNames</a>.</p>",
+"<button type=\"button\" data-act=\"manual\" data-on=\"1\">Няма такова място в списъка. Въведи координати</button>":"<button type=\"button\" data-act=\"manual\" data-on=\"1\">No such place in the list. Enter coordinates</button>"};
 if (typeof module !== "undefined") module.exports = EN_DICT;

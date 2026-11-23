@@ -214,7 +214,13 @@
   }
 
   /* ---------- birth ---------- */
-  function placeLabel(p) { return I18N.city(p[0]) + (p[4] ? ', ' + T(p[4]) : '') + ' · ' + Math.abs(p[1]).toFixed(2) + '° ' + (p[1] >= 0 ? T('с.ш.') : T('ю.ш.')) + ', ' + Math.abs(p[2]).toFixed(2) + '° ' + (p[2] >= 0 ? T('и.д.') : T('з.д.')); }
+  function placeSub(p) {
+    if (!p[5]) return p[4] ? T(p[4]) : '';
+    var reg = p[4] ? I18N.city(p[4]) : '';
+    if (reg && p[6] === 'BG') reg = I18N.lang === 'en' ? reg + T(' (област)') : (/-град$/.test(reg) ? reg : T('обл. ') + reg);
+    return (reg ? reg + ', ' : '') + countryName(p[6]);
+  }
+  function placeLabel(p) { var sub = placeSub(p); return I18N.city(p[0]) + (sub ? ', ' + sub : '') + ' · ' + Math.abs(p[1]).toFixed(2) + '° ' + (p[1] >= 0 ? T('с.ш.') : T('ю.ш.')) + ', ' + Math.abs(p[2]).toFixed(2) + '° ' + (p[2] >= 0 ? T('и.д.') : T('з.д.')); }
   function viewBirth() {
     var b = st.birth;
     var lang = I18N.lang === 'en' ? 'en' : 'bg';
@@ -234,6 +240,7 @@
       : (b.place
         ? '<div class="picked"><span>' + esc(placeLabel(b.place)) + T('</span><button type="button" class="link" data-act="unplace">Смени</button></div>')
         : T('<input class="input" id="b-place" autocomplete="off" placeholder="Започни да пишеш, напр. Силистра"><div class="sugg" id="sugg" hidden></div>') +
+          T('<p class="small">Всички населени места в България и Молдова и градовете по света с над 1000 жители. Места в чужбина търси и на латиница, напр. Florești. Данни: <a href="https://www.geonames.org" target="_blank" rel="noopener" style="color:inherit">GeoNames</a>.</p>') +
           T('<button type="button" class="link" data-act="manual" data-on="1">Мястото не е в списъка</button>'));
     return '<div class="screen">' + top() +
       head(1, T('Данни за раждане'), T('От тях се смятат Ба Дзъ, западната и ведическата карта, хюман дизайнът и числото Гуа. Ба Дзъ решава кои цветове от сезона те подсилват.')) +
@@ -247,20 +254,61 @@
       T('<div class="row"><button class="btn primary" type="submit">Продължи</button><button type="button" class="link" data-act="skipbirth">Продължи без карта</button></div>') +
       '</form></div>';
   }
+  /* place search: the hand list first (Bulgarian names of big cities abroad), then the GeoNames files in places/,
+     one file per first two letters (see source/mkplaces.py) */
+  var placeFiles = {}, sugg = [], suggSeq = 0;
+  var PMAP = { 'і': 'и', 'ї': 'и', 'є': 'е', 'ґ': 'г', 'ё': 'е', 'ы': 'и', 'э': 'е', 'ı': 'i', 'ł': 'l', 'ø': 'o', 'æ': 'ae', 'œ': 'oe', 'ß': 'ss', 'đ': 'd', 'ð': 'd', 'þ': 'th' };
+  function normPlace(x) {
+    return String(x).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[іїєґёыэıłøæœßđðþ]/g, function (c) { return PMAP[c]; })
+      .replace(/[^0-9a-zа-я]+/g, ' ').trim();
+  }
+  function placeKey(n, k) { return Array.from(n.replace(/ /g, '')).slice(0, k).map(function (c) { return c.codePointAt(0).toString(16); }).join('-'); }
+  function placeFile(k) {
+    if (!placeFiles[k]) placeFiles[k] = fetch('places/' + k + '.json').then(function (r) { return r.ok ? r.json() : { r: [] }; })
+      .catch(function () { delete placeFiles[k]; return { r: [] }; });
+    return placeFiles[k];
+  }
+  function placeRows(n) {
+    var len = Array.from(n.replace(/ /g, '')).length;
+    if (len < 2) return Promise.resolve([]);
+    return placeFile(placeKey(n, 2)).then(function (d) {
+      return d.split ? placeFile(len < 3 ? placeKey(n, 2) + '-0' : placeKey(n, 3)) : d;
+    }).then(function (d) {
+      if (!d.n) d.n = (d.r || []).map(function (r) { return [normPlace(r[1]), r[2] ? normPlace(r[2]) : '']; });
+      var out = [];
+      (d.r || []).forEach(function (r, i) {
+        var a = d.n[i][0], b = d.n[i][1];
+        if (a.indexOf(n) === 0 || (b && b.indexOf(n) === 0)) out.push({ p: [r[1], r[5], r[6], d.z[r[7]], r[3], r[0], r[4]], exact: a === n || b === n, rank: r[8] });
+      });
+      return out;
+    });
+  }
   function searchPlaces(q) {
-    q = lc(q.trim());
-    if (!q) return [];
+    var n = normPlace(q);
+    if (!n) return Promise.resolve([]);
     var a = [], b = [];
-    D.CITIES.forEach(function (c) { var n = lc(c[0]), e = lc(I18N.city(c[0])); if (n.indexOf(q) === 0 || e.indexOf(q) === 0) a.push(c); else if (n.indexOf(q) > 0 || e.indexOf(q) > 0) b.push(c); });
-    return a.concat(b).slice(0, 6);
+    D.CITIES.forEach(function (c) { var x = normPlace(c[0]), e = normPlace(I18N.city(c[0])); if (x.indexOf(n) === 0 || e.indexOf(n) === 0) a.push(c); else if (x.indexOf(n) > 0 || e.indexOf(n) > 0) b.push(c); });
+    var hand = a.concat(b);
+    return placeRows(n).then(function (rows) {
+      var home = I18N.lang === 'en' ? '' : 'BG';
+      rows = rows.filter(function (x) { return !hand.some(function (c) { return c[3] === x.p[3] && Math.abs(c[1] - x.p[1]) < 0.1 && Math.abs(c[2] - x.p[2]) < 0.1; }); });
+      rows.sort(function (x, y) { return (y.exact - x.exact) || ((y.p[6] === home) - (x.p[6] === home)) || (y.rank - x.rank); });
+      return hand.concat(rows.map(function (x) { return x.p; })).slice(0, 8);
+    });
   }
   function showSugg(q) {
+    var seq = ++suggSeq;
     var box = document.getElementById('sugg'); if (!box) return;
-    var r = searchPlaces(q);
     if (!q.trim()) { box.hidden = true; box.innerHTML = ''; return; }
-    box.hidden = false;
-    box.innerHTML = r.length ? r.map(function (c) { return '<button type="button" data-act="place" data-n="' + esc(c[0]) + '">' + esc(I18N.city(c[0])) + (c[4] ? '<small>' + T(c[4]) + '</small>' : '') + '</button>'; }).join('')
-      : T('<button type="button" data-act="manual" data-on="1">Няма такъв град в списъка. Въведи координати</button>');
+    searchPlaces(q).then(function (r) {
+      box = document.getElementById('sugg');
+      if (seq !== suggSeq || !box) return;
+      sugg = r;
+      var few = Array.from(normPlace(q).replace(/ /g, '')).length < 2;
+      box.innerHTML = r.length ? r.map(function (c, i) { var sub = placeSub(c); return '<button type="button" data-act="place" data-i="' + i + '">' + esc(I18N.city(c[0])) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</button>'; }).join('')
+        : few ? '' : T('<button type="button" data-act="manual" data-on="1">Няма такова място в списъка. Въведи координати</button>');
+      box.hidden = !box.innerHTML;
+    });
   }
   function submitBirth() {
     var b = st.birth;
@@ -738,7 +786,7 @@
     else if (a === 'start') { if (canGo('result')) { var sx = st.sex, lg = st.lang; st = fresh(); st.sex = sx; st.lang = lg; try { localStorage.removeItem(KEY); } catch (er) { } } mem.cacheKey = null; mem.err = ''; go('birth'); }
     else if (a === 'sex') { st.sex = val; st.birth.sex = val; mem.cacheKey = null; save(); var ys = window.scrollY; render(); try { window.scrollTo(0, ys); } catch (er) { } }
     else if (a === 'manual') { st.birth.manual = b.dataset.on === '1'; if (st.birth.manual) st.birth.place = null; mem.err = ''; save(); render(); }
-    else if (a === 'place') { var c = D.CITIES.filter(function (x) { return x[0] === b.dataset.n; })[0]; if (c) { st.birth.place = c; mem.err = ''; save(); render(); } }
+    else if (a === 'place') { var c = sugg[+b.dataset.i]; if (c) { st.birth.place = c; mem.err = ''; mem.cacheKey = null; save(); render(); } }
     else if (a === 'unplace') { st.birth.place = null; save(); render(); var inp = document.getElementById('b-place'); if (inp) inp.focus(); }
     else if (a === 'skipbirth') { st.birth.skip = true; mem.err = ''; mem.cacheKey = null; go('season'); }
     else if (a === 'stab') { st.season.tab = val; save(); render(); }

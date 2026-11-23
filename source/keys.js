@@ -24,7 +24,7 @@ const D=require('./src/data.js');
 const data=[]; leaves(D,data);
 const cities=D.CITIES.filter(c=>!c[4]).map(c=>c[0]).concat(['България']);
 const pub=JSON.parse(fs.readFileSync('/tmp/pubdata.json','utf8')); const pubLeaves=[]; leaves(pub,pubLeaves);
-const app=lits('src/app.js',['PROMPT']);
+const app=lits('src/app.js',['PROMPT','PMAP']);
 const priv=[].concat(lits('src/report.js',['LOOKS','LOOK_TWEAK','NO_LOOK','PAT']),lits('src/palette.js',[]),lits('src/engine.js',[]),lits('site-src/lib/server.js',[]),data);
 const uniq=a=>[...new Set(a)];
 const P=uniq(app.concat(pubLeaves,cities)), ALL=uniq(P.concat(priv));
