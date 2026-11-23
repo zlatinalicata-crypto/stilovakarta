@@ -91,7 +91,7 @@ if (ROOT / 'places').exists():
     shutil.copytree(ROOT / 'places', pub / 'places')
 
 today = datetime.date.today().strftime('%d.%m.%Y')
-for f in ['terms.html', 'privacy.html', 'terms.en.html', 'privacy.en.html']:
+for f in ['terms.html', 'privacy.html', 'terms.en.html', 'privacy.en.html', '__forms.html']:
     shutil.copy(SS / 'public-src' / f, pub / f)
 shutil.copy(ROOT / 'assets' / 'og-image.jpg', pub / 'og-image.jpg')  # link preview for Facebook and messengers
 for f in ['icon-192.png', 'icon-512.png', 'maskable-512.png', 'apple-touch-icon.png', 'favicon-64.png']:

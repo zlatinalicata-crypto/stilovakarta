@@ -15,10 +15,14 @@ function client() {
 
 /* Codes typed on the site before payment. Kept as SHA-256 of the lower-case code, so the public repository does not show them.
    pct: discount in percent. free: unlocks the full result without payment.
+   duo: price in cents for a pair, the buyer's own full result plus a gift card; works only on the result page.
    New code: node -e "console.log(require('crypto').createHash('sha256').update('kod').digest('hex'))" and add the line here. */
 const CODES = {
   '7a05b89e669e7bbad6c42211ab7d1d73c7246422858b5931ca8291685e948612': { pct: 15 },
-  '52f4133003f0b16081102a9b2daf3a1c4d5755895e56a5d6c41c181b58f73129': { free: true }
+  '52f4133003f0b16081102a9b2daf3a1c4d5755895e56a5d6c41c181b58f73129': { free: true },
+  /* the club code, in Latin and in Cyrillic letters */
+  'b2ce181120ee165e70b1d05da62df34a15c0ea53582f3daf5d8806c17b572802': { duo: 799 },
+  'e22d9bb1ff7f401481a724029c815a32b0b74ea996a925368f21c7e5bd98d3c0': { duo: 799 }
 };
 function findCode(raw) {
   const c = String(raw || '').trim().toLowerCase().replace(/\s+/g, '');
@@ -32,10 +36,11 @@ function priceCents(code) {
   const promoOn = new Date().toISOString().slice(0, 10) <= (process.env.PROMO_UNTIL || '2027-02-28');
   const cents = parseInt(promoOn ? (process.env.PROMO_CENTS || '499') : (process.env.PRICE_CENTS || '1999'), 10);
   if (code && code.free) return 0;
+  if (code && code.duo) return code.duo;
   if (code && code.pct) return Math.max(50, Math.round(cents * (100 - code.pct) / 100));
   return cents;
 }
-function codeInfo(code) { return code.free ? { free: true } : { pct: code.pct, cents: priceCents(code) }; }
+function codeInfo(code) { return code.free ? { free: true } : code.duo ? { duo: true, cents: code.duo } : { pct: code.pct, cents: priceCents(code) }; }
 
 /* A free code gives a token tied to the inputs, signed with a server secret. */
 function freeKey() {
@@ -48,7 +53,8 @@ function freeSession(h) {
   return 'free_' + crypto.createHmac('sha256', k).update(String(h)).digest('hex').slice(0, 32);
 }
 
-async function createCheckout(h, origin, lang, code) {
+async function createCheckout(h, origin, lang, code, g) {
+  if (code && code.duo) return createDuoCheckout(h, origin, lang, code, g || {});
   if (mock()) return { url: origin + '/?session_id=mock_paid_' + h };
   const stripe = client();
   if (!stripe) { const e = new Error('Stripe key missing'); e.code = 'not_configured'; throw e; }
@@ -100,7 +106,29 @@ async function createGiftCheckout(origin, lang, code, g) {
   return { url: session.url };
 }
 
-/* The buyer's gift card: { code, to, from, msg } for a paid gift session, otherwise { note }. */
+/* The club pair (a duo code): one payment unlocks the buyer's own result (metadata h) and issues a gift code, as a gift card does.
+   The same Checkout session opens both: the result through isPaid, the gift card through giftCard.
+   A refund of any part of the payment stops the gift code; the buyer's own result stays open. */
+async function createDuoCheckout(h, origin, lang, code, g) {
+  const gc = newGiftCode();
+  if (mock()) { mockGifts.set(gc, { h: '', to: g.to, from: g.from, msg: g.msg }); return { url: origin + '/?session_id=mock_paid_' + h + '&duo=mock_gift_' + gc }; }
+  const stripe = client();
+  if (!stripe) { const e = new Error('Stripe key missing'); e.code = 'not_configured'; throw e; }
+  const meta = { kind: 'duo', h: h, gift: gc, code: code.code };
+  ['to', 'from', 'msg'].forEach((k) => { if (g[k]) meta[k] = g[k]; });
+  const session = await stripe.checkout.sessions.create({
+    mode: 'payment',
+    line_items: [{ quantity: 1, price_data: { currency: 'eur', unit_amount: code.duo, product_data: { name: lang === 'en' ? 'Stilova Karta: full result + gift card' : 'Стилова карта: пълен резултат + подаръчна карта' } } }],
+    payment_intent_data: { metadata: { kind: 'duo', gift: gc }, description: 'Пакет за теб + подарък · ' + giftShow(gc) },
+    success_url: origin + '/?session_id={CHECKOUT_SESSION_ID}&duo=1',
+    cancel_url: origin + '/?cancelled=1',
+    metadata: meta,
+    locale: lang === 'en' ? 'en' : 'bg'
+  });
+  return { url: session.url };
+}
+
+/* The buyer's gift card: { code, to, from, msg } for a paid gift or duo session, otherwise { note }. */
 async function giftCard(id) {
   if (typeof id !== 'string' || !id || id.length > 200) return { note: 'unknown' };
   if (mock()) {
@@ -112,7 +140,7 @@ async function giftCard(id) {
   try {
     const s = await stripe.checkout.sessions.retrieve(id);
     const m = s.metadata || {};
-    if (m.kind !== 'gift' || !giftNorm(m.gift)) return { note: 'unknown' };
+    if ((m.kind !== 'gift' && m.kind !== 'duo') || !giftNorm(m.gift)) return { note: 'unknown' };
     if (s.payment_status !== 'paid') return { note: 'unpaid' };
     if (!s.livemode && !testMode()) return { note: 'test' };
     return { code: giftShow(giftNorm(m.gift)), to: m.to || '', from: m.from || '', msg: m.msg || '' };
@@ -130,7 +158,8 @@ async function lookupGift(gc) {
   const hit = found.data[0];
   if (!hit || (!hit.livemode && !testMode())) return { note: 'gift_unknown' };
   const pi = await stripe.paymentIntents.retrieve(hit.id, { expand: ['latest_charge'] });
-  if (pi.latest_charge && pi.latest_charge.refunded) return { note: 'gift_refunded' };
+  const ch = pi.latest_charge;
+  if (ch && (ch.refunded || (pi.metadata && pi.metadata.kind === 'duo' && ch.amount_refunded > 0))) return { note: 'gift_refunded' };
   return { ok: true, used: (pi.metadata && pi.metadata.gift_h) || '', ref: pi.id };
 }
 /* Checks a gift code, and with inputs (h) also that it is free for them: { ok } or { note }. */

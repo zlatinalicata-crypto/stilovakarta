@@ -12,8 +12,9 @@
   var IS_SITE = window.__SITE__ === true;
   var LOCAL = typeof makeReport !== 'undefined' && typeof Pal !== 'undefined';
   /* Introductory price until promoUntil (inclusive), then the regular price. Keep in step with lib/pay.js. */
-  var CONFIG = { promo: '4,99 €', regular: '19,99 €', promoUntil: '2027-02-28', checkoutReady: IS_SITE };
+  var CONFIG = { promo: '4,99 €', regular: '19,99 €', promoCents: 499, regularCents: 1999, promoUntil: '2027-02-28', checkoutReady: IS_SITE };
   function promoOn() { return new Date().toISOString().slice(0, 10) <= CONFIG.promoUntil; }
+  function priceCentsNow() { return promoOn() ? CONFIG.promoCents : CONFIG.regularCents; }
   function priceNow() { return T(promoOn() ? CONFIG.promo : CONFIG.regular); }
   function promoDate() { return CONFIG.promoUntil.split('-').reverse().join('.'); }
   function priceTag() { return promoOn() ? T(CONFIG.promo) + ' <s>' + T(CONFIG.regular) + '</s>' : T(CONFIG.regular); }
@@ -40,13 +41,13 @@
       line: { answers: [], i: 0, value: null, pick: false, done: false },
       arch: { answers: [], i: 0, primary: null, secondary: null, pick: false, done: false },
       session: null,
-      gift: { to: '', from: '', msg: '' }, giftSession: null, pendingCode: null
+      gift: { to: '', from: '', msg: '' }, giftSession: null, pendingCode: null, duo: null
     };
   }
   var st = fresh();
   var mem = { blob: null, work: null, marks: {}, target: 'skin', aiAvail: false, busy: false, status: '', err: '', toast: '', cacheKey: null, cache: null };
   function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { } }
-  function load() { try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.birth && s.season) { var f = fresh(); ['birth', 'season', 'line', 'arch'].forEach(function (k) { f[k] = Object.assign(f[k], s[k] || {}); }); f.view = s.view || 'intro'; f.sex = s.sex || (s.birth && s.birth.sex) || null; f.session = s.session || null; if (s.gift) f.gift = Object.assign(f.gift, s.gift); f.giftSession = s.giftSession || null; f.pendingCode = s.pendingCode || null; f.lang = s.lang === 'en' || s.lang === 'bg' ? s.lang : null; if (s.qv !== 2) { f.season.quiz = []; if (f.season.src === 'quiz') { f.season.value = null; f.season.sub = null; f.season.src = null; if (f.view !== 'intro') f.view = 'season'; } } return f; } } catch (e) { } return null; }
+  function load() { try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.birth && s.season) { var f = fresh(); ['birth', 'season', 'line', 'arch'].forEach(function (k) { f[k] = Object.assign(f[k], s[k] || {}); }); f.view = s.view || 'intro'; f.sex = s.sex || (s.birth && s.birth.sex) || null; f.session = s.session || null; if (s.gift) f.gift = Object.assign(f.gift, s.gift); f.giftSession = s.giftSession || null; f.duo = s.duo || null; f.pendingCode = s.pendingCode || null; f.lang = s.lang === 'en' || s.lang === 'bg' ? s.lang : null; if (s.qv !== 2) { f.season.quiz = []; if (f.season.src === 'quiz') { f.season.value = null; f.season.sub = null; f.season.src = null; if (f.view !== 'intro') f.view = 'season'; } } return f; } } catch (e) { } return null; }
 
   /* ---------- completeness ---------- */
   function birthOk() {
@@ -179,7 +180,7 @@
 
       '<section class="outro" id="outro"><p class="eyebrow">' + T('Следващата страница') + '</p><h2 class="h-xl">' + T('Ако вече те заинтригувах, продължи с теста') + '</h2>' +
       '<ol class="path"><li><b>' + T('Тестът') + '</b><span>' + T('Безплатен, около 10 минути') + '</span></li><li><b>' + T('Откъсът') + '</b><span>' + T('Веднага виждаш част от картата си') + '</span></li><li><b>' + T('Пълната карта') + '</b><span>' + T('Еднократна такса: ') + priceNow() + '</span></li></ol>' +
-      '<div class="row">' + cta + '</div><p class="meta">' + T('Плащаш само ако поискаш пълната карта. Без абонамент.') + '</p></section>' +
+      '<div class="row">' + cta + '</div><p class="meta">' + T('Плащаш само ако поискаш пълната карта. Без абонамент.') + '</p>' + contactBlock() + '</section>' +
       '<div class="stick" id="stick"><span>' + T('Безплатен тест · около 10 минути') + '</span><button class="btn primary" data-act="tostart" tabindex="-1">' + T('Към теста') + '</button></div>' +
       '</div>';
   }
@@ -570,7 +571,7 @@
     if (!CONFIG.checkoutReady) return '';
     var c = mem.code;
     if (!c && !mem.codeOpen && st.pendingCode && st.view === 'result') { mem.codeOpen = true; if (!mem.codeInput) mem.codeInput = st.pendingCode; }
-    if (c) return '<p class="small code-ok" role="status">' + (c.gift ? T('Подаръчният код отключва пълния резултат.') : c.free ? T('Кодът отключва пълния резултат безплатно.') : T('Кодът е приложен: −') + c.pct + '%.') + ' <button class="link" data-act="uncode">' + T('Махни кода') + '</button></p>';
+    if (c) return '<p class="small code-ok" role="status">' + (c.gift ? T('Подаръчният код отключва пълния резултат.') : c.free ? T('Кодът отключва пълния резултат безплатно.') : c.duo ? T('Кодът е приложен: твоята карта и подаръчна карта за ') + money(c.cents) + '.' : T('Кодът е приложен: −') + c.pct + '%.') + ' <button class="link" data-act="uncode">' + T('Махни кода') + '</button></p>';
     if (!mem.codeOpen) return '<div class="row"><button class="link" data-act="codeopen">' + T('Имам код за отстъпка') + '</button></div>';
     return '<div class="code-row"><input class="input" id="code" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" placeholder="' + T('Код') + '" aria-label="' + T('Код за отстъпка') + '" value="' + esc(mem.codeInput || '') + '">' +
       '<button class="btn" data-act="code"' + (mem.codeBusy ? ' disabled' : '') + '>' + T('Приложи') + '</button></div>' +
@@ -584,24 +585,28 @@
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (x) {
         mem.codeBusy = false;
-        if (x.ok && (x.j.free || x.j.pct)) { mem.code = { code: v, free: !!x.j.free, gift: !!x.j.gift, pct: x.j.pct, cents: x.j.cents }; mem.codeOpen = false; mem.payNote = ''; }
+        if (x.ok && (x.j.free || x.j.pct || x.j.duo)) { mem.code = { code: v, free: !!x.j.free, gift: !!x.j.gift, duo: !!x.j.duo, pct: x.j.pct, cents: x.j.cents }; mem.codeOpen = false; mem.payNote = ''; }
         else mem.codeErr = x.j.error || T('Този код не е валиден. Провери как е изписан.');
         render();
       })
       .catch(function () { mem.codeBusy = false; mem.codeErr = T('Няма връзка със сървъра. Опитай отново.'); render(); });
   }
   function payCard(R) {
-    var consent = '', c = mem.code;
-    var price = !c ? priceTag() : (c.free ? T('Безплатно') : money(c.cents)) + ' <s>' + priceNow() + '</s>';
+    var consent = '', c = mem.code, duo = !!(c && c.duo);
+    /* a duo code: the buyer's own full result and a gift card in one payment; the struck price is the two bought apart */
+    var price = !c ? priceTag() : (c.free ? T('Безплатно') : money(c.cents)) + ' <s>' + (duo ? money(2 * priceCentsNow()) : priceNow()) + '</s>';
     if (CONFIG.checkoutReady) consent = '<label class="check consent" for="consent"><input type="checkbox" id="consent"' + (mem.consent ? ' checked' : '') + '> <span>' +
       (c && c.free ? T('Приемам <a href="terms.html" target="_blank" rel="noopener">Общите условия</a>.</span></label>') :
-      gf(T('Съгласна'), T('Съгласен')) + T(' съм резултатът да ми бъде предоставен веднага след плащането и знам, че така губя правото си на отказ от покупката. Приемам <a href="terms.html" target="_blank" rel="noopener">Общите условия</a>.</span></label>'));
+      gf(T('Съгласна'), T('Съгласен')) + T(' съм резултатът да ми бъде предоставен веднага след плащането и знам, че така губя правото си на отказ от покупката. Приемам <a href="terms.html" target="_blank" rel="noopener">Общите условия</a>.</span></label>')) +
+      (duo ? '<p class="small">' + T('Неизползваният подаръчен код от пакета може да бъде върнат до 14 дни след покупката.') + '</p>' : '');
     /* Card payments not switched on yet (no live Stripe key): say so; codes still work. */
     var soon = CONFIG.checkoutReady && R.payReady === false && !(c && c.free);
     var info = c && c.free ? '' : soon ? (promoLine() ? '<p class="small">' + promoLine() + '</p>' : '') + '<p class="banner" role="status">' + T('Плащането с карта ще бъде включено съвсем скоро.') + '</p>' :
+      duo ? '<p class="small">' + T('Твоята пълна карта и подаръчна карта за човек по твой избор, с едно плащане. Твоята карта се отваря веднага, а подаръчната с личния код е готова на същата страница.') + '</p>' :
       '<p class="small">' + promoLine() + T(' Еднократно плащане с карта. Резултатът се отваря веднага след плащането.</p>');
-    return T('<div class="card hl pay"><p class="eyebrow">Пълен резултат</p><p class="pay-price">') + price + '</p>' + info +
-      codeBox() + (soon ? '' : consent + '<div class="row"><button class="btn primary" data-act="pay"' + (CONFIG.checkoutReady && !mem.consent || mem.paying ? ' disabled' : '') + '>' + (mem.paying ? (c && c.free ? T('Отключвам…') : T('Отварям плащането…')) : (c && c.free ? T('Отключи безплатно') : T('Отключи пълния резултат'))) + '</button></div>') +
+    var duoForm = duo && !soon ? '<div class="gift-form"><b>' + T('Подаръчната карта') + '</b>' + giftField('to', T('За кого'), st.gift.to) + giftField('from', T('От кого'), st.gift.from) + giftField('msg', T('Пожелание'), st.gift.msg, true) + '</div>' : '';
+    return '<div class="card hl pay"><p class="eyebrow">' + (duo ? T('Твоята карта + подарък') : T('Пълен резултат')) + '</p><p class="pay-price">' + price + '</p>' + info +
+      codeBox() + duoForm + (soon ? '' : consent + '<div class="row"><button class="btn primary" data-act="pay"' + (CONFIG.checkoutReady && !mem.consent || mem.paying ? ' disabled' : '') + '>' + (mem.paying ? (c && c.free ? T('Отключвам…') : T('Отварям плащането…')) : (c && c.free ? T('Отключи безплатно') : duo ? T('Отключи картата и подаръка') : T('Отключи пълния резултат'))) + '</button></div>') +
       (mem.payNote ? '<p class="small" role="status">' + esc(mem.payNote) + '</p>' : '') +
       (R.testMode ? T('<button class="link" data-act="preview">Тестов режим: виж пълния резултат без плащане</button>') : '') +
       (CONFIG.checkoutReady ? '<div class="row"><button class="link" data-act="go" data-v="gift">' + T('Подари стилова карта на някого') + '</button></div>' : '') + '</div>';
@@ -612,6 +617,9 @@
     if (R.error) return out + '<p class="err" role="alert">' + esc(R.error) + T('</p><div class="row"><button class="btn" data-act="retry">Опитай отново</button><button class="link" data-act="go" data-v="birth">Промени данните</button></div></div>');
     if (R.full) {
       if (!R.paid) out += T('<p class="banner">Тестов режим: така изглежда пълният резултат след плащане. <button class="link" data-act="unpreview">Обратно към прегледа</button></p>');
+      /* bought with a duo code: the gift card waits one tap away */
+      if (st.duo && R.paid) out += '<div class="card hl no-print"><p class="eyebrow">' + T('Подаръкът от пакета') + '</p><p>' + T('С плащането получи и подаръчна карта с личен код. Отвори я, запази я като PDF или копирай линка и го прати на човека, на когото я подаряваш.') + '</p>' +
+        '<div class="row"><button class="btn primary" data-act="duocard">' + T('Виж подаръчната карта') + '</button></div></div>';
       return out + '<div class="print-only print-head"><span>' + T('Стилова карта') + '</span><span>' + todayStr() + '</span></div>' + R.full.html +
         '<div class="print-only print-foot"><span>' + T('Стилова карта') + '</span><span>' + T('Личен стилов анализ') + ' · ' + todayStr() + '</span></div>' +
         '<div class="foot"><div class="row"><button class="btn primary" data-act="pdf">' + T('Запази като PDF') + '</button><button class="btn" data-act="copy">' + T('Копирай резултата') + '</button></div>' +
@@ -648,7 +656,7 @@
     if (!CONFIG.checkoutReady) { mem.payNote = T('Плащането ще бъде свързано, когато сайтът тръгне.'); render(); return; }
     if (!mem.consent || mem.paying) return;
     mem.paying = true; mem.payNote = ''; render();
-    fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: inputOf(), consent: true, lang: I18N.lang, code: mem.code ? mem.code.code : null }) })
+    fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: inputOf(), consent: true, lang: I18N.lang, code: mem.code ? mem.code.code : null, duoGift: mem.code && mem.code.duo ? st.gift : null }) })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (x) {
         if (x.ok && x.j.url) { save(); location.href = x.j.url; return; }
@@ -676,7 +684,7 @@
   }
   function viewGift() {
     giftStatus();
-    var g = st.gift, c = mem.code && !mem.code.free ? mem.code : null;
+    var g = st.gift, c = mem.code && !mem.code.free && !mem.code.duo ? mem.code : null;
     var price = c ? money(c.cents) + ' <s>' + priceNow() + '</s>' : priceTag();
     var soon = CONFIG.checkoutReady && mem.giftReady === false;
     var info = soon ? (promoLine() ? '<p class="small">' + promoLine() + '</p>' : '') + '<p class="banner" role="status">' + T('Плащането с карта ще бъде включено съвсем скоро.') + '</p>'
@@ -699,7 +707,7 @@
     if (!CONFIG.checkoutReady) { mem.giftNote = T('Плащането ще бъде свързано, когато сайтът тръгне.'); render(); return; }
     if (!mem.giftConsent || mem.paying) return;
     mem.paying = true; mem.giftNote = ''; render();
-    var c = mem.code && !mem.code.free ? mem.code.code : null;
+    var c = mem.code && !mem.code.free && !mem.code.duo ? mem.code.code : null;
     fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gift: st.gift, consent: true, lang: I18N.lang, code: c }) })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (x) {
@@ -746,7 +754,8 @@
       '<p class="small">' + pdfHint() + '</p>' +
       '<p class="small">' + T('Кодът важи за един пълен резултат. Тази страница се отваря отново от същото устройство. Ако загубиш кода, пиши ни на style@stilovakarta.com.') + '</p>' +
       (mem.toast ? '<p class="toast" role="status">' + mem.toast + '</p>' : '') +
-      '<div class="row"><button class="btn ghost" data-act="giftmore">' + T('Подари още една') + '</button><button class="link" data-act="go" data-v="intro">' + T('Към началото') + '</button></div></div></div>';
+      '<div class="row">' + (st.duo && st.duo === st.giftSession && canGo('result') ? '<button class="btn ghost" data-act="go" data-v="result">' + T('Към моята карта') + '</button>' : '') +
+      '<button class="btn ghost" data-act="giftmore">' + T('Подари още една') + '</button><button class="link" data-act="go" data-v="intro">' + T('Към началото') + '</button></div></div></div>';
   }
   function giftPdf() {
     oldTitle = document.title;
@@ -756,6 +765,40 @@
   function copyText(txt, msg) {
     var fail = function () { mem.toast = T('Браузърът не позволи копиране.'); render(); };
     try { navigator.clipboard.writeText(txt).then(function () { mem.toast = msg; render(); }, fail); } catch (er) { fail(); }
+  }
+  /* ---------- contact ---------- */
+  /* At the end of the intro page, on the site only. The form goes to Netlify Forms ("kontakt", found in public/__forms.html at deploy). */
+  var CONTACT = { mail: 'style@stilovakarta.com', fb: 'https://www.facebook.com/zssomatic', ig: 'https://www.instagram.com/zs.somatic/' };
+  function contactData() { if (!mem.cf) mem.cf = { name: '', email: '', msg: '' }; return mem.cf; }
+  function contactBlock() {
+    if (!IS_SITE) return '';
+    var f = contactData();
+    var form = mem.cfSent ? '<p class="cf-ok" role="status">' + T('Благодарим! Съобщението е изпратено. Ще ти отговорим на имейла, който посочи.') + '</p>' :
+      '<form class="cform" id="cform">' +
+      '<div class="field"><label class="lbl" for="cf-name">' + T('Име') + '</label><input class="input" id="cf-name" name="name" type="text" maxlength="80" autocomplete="name" value="' + esc(f.name) + '"></div>' +
+      '<div class="field"><label class="lbl" for="cf-email">' + T('Имейл') + '</label><input class="input" id="cf-email" name="email" type="email" required maxlength="120" autocomplete="email" value="' + esc(f.email) + '"></div>' +
+      '<div class="field"><label class="lbl" for="cf-msg">' + T('Съобщение') + '</label><textarea class="input" id="cf-msg" name="message" required maxlength="2000" rows="4">' + esc(f.msg) + '</textarea></div>' +
+      '<p class="cf-hp" aria-hidden="true"><label>' + T('Не попълвай това поле') + ' <input id="cf-hp" name="bot-field" type="text" tabindex="-1" autocomplete="off"></label></p>' +
+      (mem.cfErr ? '<p class="err" role="alert">' + esc(mem.cfErr) + '</p>' : '') +
+      '<div class="row"><button class="btn light" type="submit"' + (mem.cfBusy ? ' disabled' : '') + '>' + (mem.cfBusy ? T('Изпращам…') : T('Изпрати')) + '</button></div></form>';
+    var links = '<ul class="cf-links">' +
+      '<li><a href="' + CONTACT.fb + '" target="_blank" rel="noopener"><b>Facebook</b><span>@zssomatic</span></a></li>' +
+      '<li><a href="' + CONTACT.ig + '" target="_blank" rel="noopener"><b>Instagram</b><span>@zs.somatic</span></a></li>' +
+      '<li><a href="mailto:' + CONTACT.mail + '"><b>' + T('Имейл') + '</b><span>' + CONTACT.mail + '</span></a></li></ul>';
+    return '<footer class="sitefoot" id="kontakt"><div class="sec-head"><p class="eyebrow">' + T('Контакт') + '</p><h2 class="h-xl">' + T('Пиши ни') + '</h2>' +
+      '<p class="lede">' + T('Въпрос за картата, подаръка или партньорство? Пиши ни тук или ни намери в социалните мрежи.') + '</p></div>' +
+      '<div class="cf-cols">' + form + links + '</div>' +
+      '<p class="small">' + T('<a href="terms.html">Общи условия</a> · <a href="privacy.html">Поверителност</a>') + '</p></footer>';
+  }
+  function sendContact() {
+    if (mem.cfBusy) return;
+    var f = contactData(), hp = document.getElementById('cf-hp');
+    var keep = function () { var y = window.scrollY; render(); try { window.scrollTo(0, y); } catch (er) { } };
+    mem.cfBusy = true; mem.cfErr = ''; keep();
+    var body = new URLSearchParams({ 'form-name': 'kontakt', name: f.name || '', email: f.email || '', message: f.msg || '', 'bot-field': hp ? hp.value : '' }).toString();
+    fetch('/__forms.html', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body })
+      .then(function (r) { if (!r.ok) throw new Error('form ' + r.status); mem.cfBusy = false; mem.cfSent = true; mem.cf = null; keep(); })
+      .catch(function () { mem.cfBusy = false; mem.cfErr = T('Съобщението не се изпрати. Опитай отново или ни пиши на ') + CONTACT.mail + '.'; keep(); });
   }
   /* ---------- render ---------- */
   function render() {
@@ -776,14 +819,15 @@
     if (e.target.id === 'pcv') { tapPhoto(e, e.target); return; }
     var b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
     var a = b.dataset.act, val = b.dataset.v;
-    if (a === 'go') { if (val === 'intro' || val === 'start' || val === 'gift' || canGo(val)) { if (val === 'gift' && mem.code && mem.code.free) mem.code = null; mem.toast = ''; go(val); } }
+    if (a === 'go') { if (val === 'intro' || val === 'start' || val === 'gift' || canGo(val)) { if (val === 'gift' && mem.code && (mem.code.free || mem.code.duo)) mem.code = null; mem.toast = ''; go(val); } }
+    else if (a === 'duocard') { if (st.duo) { st.giftSession = st.duo; mem.gc = null; mem.toast = ''; go('giftcard'); } }
     else if (a === 'giftbuy') startGiftCheckout();
     else if (a === 'giftpdf') giftPdf();
     else if (a === 'giftcopy') { if (mem.gc && mem.gc.code) copyText(mem.gc.code, T('Кодът е копиран.')); }
     else if (a === 'giftlink') { if (mem.gc && mem.gc.code) copyText(location.origin + '/?code=' + encodeURIComponent(mem.gc.code), T('Линкът е копиран. Той отваря сайта с попълнен код.')); }
     else if (a === 'giftretry') { mem.gc = null; render(); }
     else if (a === 'giftmore') { st.gift = fresh().gift; mem.giftConsent = false; mem.giftNote = ''; mem.toast = ''; go('gift'); }
-    else if (a === 'start') { if (canGo('result')) { var sx = st.sex, lg = st.lang; st = fresh(); st.sex = sx; st.lang = lg; try { localStorage.removeItem(KEY); } catch (er) { } } mem.cacheKey = null; mem.err = ''; go('birth'); }
+    else if (a === 'start') { if (canGo('result')) { var sx = st.sex, lg = st.lang, du = st.duo, gs = st.giftSession; st = fresh(); st.sex = sx; st.lang = lg; st.duo = du; st.giftSession = gs; try { localStorage.removeItem(KEY); } catch (er) { } } mem.cacheKey = null; mem.err = ''; go('birth'); }
     else if (a === 'sex') { st.sex = val; st.birth.sex = val; mem.cacheKey = null; save(); var ys = window.scrollY; render(); try { window.scrollTo(0, ys); } catch (er) { } }
     else if (a === 'manual') { st.birth.manual = b.dataset.on === '1'; if (st.birth.manual) st.birth.place = null; mem.err = ''; save(); render(); }
     else if (a === 'place') { var c = sugg[+b.dataset.i]; if (c) { st.birth.place = c; mem.err = ''; mem.cacheKey = null; save(); render(); } }
@@ -851,6 +895,7 @@
   app.addEventListener('input', function (e) {
     var t = e.target, b = st.birth;
     if (t.id === 'g-to' || t.id === 'g-from' || t.id === 'g-msg') { st.gift[t.id.slice(2)] = t.value; save(); return; }
+    if (t.id === 'cf-name' || t.id === 'cf-email' || t.id === 'cf-msg') { contactData()[t.id.slice(3)] = t.value; if (mem.cfErr) mem.cfErr = ''; return; }
     if (t.id === 'code') { mem.codeInput = t.value; if (mem.codeErr) { mem.codeErr = ''; var er = t.parentNode.nextSibling; if (er && er.className === 'err') er.remove(); } return; }
     if (t.id === 'b-date') b.date = t.value;
     else if (t.id === 'b-time') b.time = t.value;
@@ -879,7 +924,7 @@
       }, function () { mem.status = T('Тази снимка не може да се отвори. Опитай с JPG или PNG.'); render(); });
     }
   });
-  app.addEventListener('submit', function (e) { e.preventDefault(); if (e.target.id === 'bform') submitBirth(); });
+  app.addEventListener('submit', function (e) { e.preventDefault(); if (e.target.id === 'bform') submitBirth(); else if (e.target.id === 'cform') sendContact(); });
 
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); installEvt = e; if (st.view === 'intro') render(); });
   window.addEventListener('appinstalled', function () { installEvt = null; mem.installed = true; if (st.view === 'intro') render(); });
@@ -894,9 +939,14 @@
     if (qs.get('code')) { st.pendingCode = qs.get('code').slice(0, 40); save(); }
     if (qs.get('gift_session')) { st.giftSession = qs.get('gift_session'); st.view = 'giftcard'; save(); }
     else if (qs.get('gift')) { st.view = 'gift'; save(); if (qs.get('cancelled')) mem.giftNote = T('Плащането е прекъснато. Можеш да опиташ отново.'); }
-    if (qs.get('session_id')) { st.session = qs.get('session_id'); st.view = 'result'; save(); }
+    if (qs.get('session_id')) {
+      st.session = qs.get('session_id'); st.view = 'result';
+      /* ?duo: the payment also bought a gift card; on the live site its session is the same one ("1") */
+      if (qs.get('duo')) { st.duo = qs.get('duo') === '1' ? st.session : qs.get('duo').slice(0, 200); st.gift = fresh().gift; }
+      save();
+    }
     if (qs.get('cancelled') && !qs.get('gift')) { st.view = 'result'; mem.payNote = T('Плащането е прекъснато. Можеш да опиташ отново.'); }
-    if (['session_id', 'cancelled', 'gift', 'gift_session', 'code'].some(function (k) { return qs.has(k); })) history.replaceState(null, '', location.pathname);
+    if (['session_id', 'cancelled', 'gift', 'gift_session', 'code', 'duo'].some(function (k) { return qs.has(k); })) history.replaceState(null, '', location.pathname);
   } catch (e) { }
   render();
 })();
