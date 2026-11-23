@@ -37,7 +37,7 @@ const o = {
   LINES: Object.fromEntries(Object.entries(D.LINES).map(([k, l]) => [k, { name: l.name, fam: l.fam, essence: l.essence }])),
   LINE_KEYS: D.LINE_KEYS, LINE_PROTO: D.LINE_PROTO, LINE_Q: D.LINE_Q,
   ARCH: Object.fromEntries(Object.entries(D.ARCH).map(([k, a]) => [k, { name: a.name, traits: a.traits, essence: a.essence, m: a.m ? { name: a.m.name, traits: a.m.traits } : undefined }])),
-  ARCH_KEYS: D.ARCH_KEYS, ARCH_Q: D.ARCH_Q, SEASON_Q: D.SEASON_Q, CITIES: D.CITIES, TZS: D.TZS
+  ARCH_KEYS: D.ARCH_KEYS, ARCH_Q: D.ARCH_Q, SEASON_Q: D.SEASON_Q, CITIES: D.CITIES, TZS: D.TZS, ZONES: D.ZONES
 };
 process.stdout.write(JSON.stringify(o));
 '''], capture_output=True, text=True, cwd=ROOT, check=True).stdout
@@ -83,7 +83,7 @@ missing = [k for k in keys['all'] if k not in endict]
 if missing:
     raise SystemExit('Missing English for: ' + repr(missing[:10]))
 pub_dict = 'var EN_DICT = ' + json.dumps({k: endict[k] for k in keys['public'] + ['4,99 €', '19,99 €']}, ensure_ascii=False) + ';'
-site_html = site_html.replace('/*__SCRIPTS__*/', pub_dict + '\n' + read('i18n.js') + '\nvar DATA = I18N.wrap(' + pubdata + ", ['fam', 'CITIES', 'TZS']);\n" + read('scoring.js') + '\n' + read('icons.js') + '\n' + read('app.js'))
+site_html = site_html.replace('/*__SCRIPTS__*/', pub_dict + '\n' + read('i18n.js') + '\nvar DATA = I18N.wrap(' + pubdata + ", ['fam', 'CITIES', 'TZS', 'ZONES']);\n" + read('scoring.js') + '\n' + read('icons.js') + '\n' + read('app.js'))
 (pub / 'index.html').write_text(site_html)
 
 today = datetime.date.today().strftime('%d.%m.%Y')

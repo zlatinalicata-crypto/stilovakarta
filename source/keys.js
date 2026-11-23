@@ -18,7 +18,7 @@ function lits(file, skipVars){
 }
 function leaves(o, acc, key){
   if(typeof o==='string'){ if(CYR.test(o)) acc.push(o); return; }
-  if(o && typeof o==='object') for(const k of Object.keys(o)){ if(['fam','CITIES','TZS'].includes(k)) continue; leaves(o[k],acc,k); }
+  if(o && typeof o==='object') for(const k of Object.keys(o)){ if(['fam','CITIES','TZS','ZONES'].includes(k)) continue; leaves(o[k],acc,k); }
 }
 const D=require('./src/data.js');
 const data=[]; leaves(D,data);
