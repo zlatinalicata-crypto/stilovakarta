@@ -1,5 +1,10 @@
 /* English texts, keyed by the Bulgarian source text. Generated from the translation batches. */
-var EN_DICT = {"Въвеждаща цена до ":"Introductory price until ",
+var EN_DICT = {"Метал и камъни, подбрани по елементите ти":"Metal and stones chosen by your elements",
+"Твоят метал и камъни":"Your metal and stones",
+"Кой метал и кои камъни озаряват лицето ти и кои цветове те уморяват":"Which metal and stones light up your face and which colours tire you",
+"Камъните са подбрани по благоприятните ти елементи и по подтона на сезона.":"The stones are chosen by your favourable elements and the undertone of your season.",
+"Камъните са подбрани по подтона на сезона.":"The stones are chosen by the undertone of your season.",
+"Въвеждаща цена до ":"Introductory price until ",
 ". След това цената е ":". After that the price is ",
 "<div class=\"row\"><button class=\"btn\" data-act=\"install\">Инсталирай на устройството</button></div>":"<div class=\"row\"><button class=\"btn\" data-act=\"install\">Install on this device</button></div>",
 "<p class=\"small\">В Safari натисни бутона „Сподели“, после „Добави към началния екран“.</p>":"<p class=\"small\">In Safari tap Share, then Add to Home Screen.</p>",
