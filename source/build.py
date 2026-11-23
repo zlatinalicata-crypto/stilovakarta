@@ -55,6 +55,17 @@ for fam, pkg, weights in [('Prata', 'prata', [400]), ('Onest', 'onest', [400, 50
 
 head = '''<meta name="theme-color" content="#16131A">
 <meta name="description" content="Лична палитра от цветовия сезон, линията на тялото, стиловия архетип и рождената карта.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Стилова карта">
+<meta property="og:title" content="Стилова карта · Облечи душата си">
+<meta property="og:description" content="Личен стилов анализ по седем системи: цветови сезон, линия на тялото, архетип, Ба Дзъ, астрология, хюман дизайн и число Гуа. Тестът е безплатен.">
+<meta property="og:url" content="https://stilovakarta.com/">
+<meta property="og:image" content="https://stilovakarta.com/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Стилова карта · Облечи душата си · Безплатен тест">
+<meta property="og:locale" content="bg_BG">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/favicon-64.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -78,6 +89,7 @@ site_html = site_html.replace('/*__SCRIPTS__*/', pub_dict + '\n' + read('i18n.js
 today = datetime.date.today().strftime('%d.%m.%Y')
 for f in ['terms.html', 'privacy.html', 'terms.en.html', 'privacy.en.html']:
     shutil.copy(SS / 'public-src' / f, pub / f)
+shutil.copy(ROOT / 'assets' / 'og-image.jpg', pub / 'og-image.jpg')  # link preview for Facebook and messengers
 for f in ['icon-192.png', 'icon-512.png', 'maskable-512.png', 'apple-touch-icon.png', 'favicon-64.png']:
     shutil.copy(ROOT / 'assets' / f, pub / 'icons' / f)
 manifest = {
