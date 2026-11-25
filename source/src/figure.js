@@ -247,15 +247,13 @@ var Figure = (function () {
   }
   var CLOTH = pinked(6, 6, 94, 94, 1.6);
   function fabric(kind, c) {
-    var id = nextId('pt'), sheen = id + 'f', weave = id + 'v';
+    var id = nextId('pt'), weave = id + 'v';
     var defs = patDef(kind, c, id, 1) +
-      '<linearGradient id="' + sheen + '" x1="0" y1="0" x2="1" y2="1">' + [[0, '#fff', 0.16], [0.35, '#fff', 0], [0.62, '#000', 0.05], [0.78, '#fff', 0.08], [1, '#000', 0.14]].map(function (st) {
-        return '<stop offset="' + st[0] + '" stop-color="' + st[1] + '" stop-opacity="' + st[2] + '"/>';
-      }).join('') + '</linearGradient>' +
       '<pattern id="' + weave + '" width="2.4" height="2.4" patternUnits="userSpaceOnUse"><path d="M0,2.4 L2.4,0" stroke="#000" stroke-width=".35" opacity=".07"/></pattern>';
     return '<svg viewBox="0 0 100 100" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>' + defs + '</defs><g transform="rotate(-2.5 50 50)">' +
       '<path d="' + CLOTH + '" fill="#000" opacity=".12" transform="translate(1.6 2.4)"/>' +
-      '<path d="' + CLOTH + '" fill="url(#' + id + ')"/><path d="' + CLOTH + '" fill="url(#' + weave + ')"/><path d="' + CLOTH + '" fill="url(#' + sheen + ')"/></g></svg>';
+      '<path d="' + CLOTH + '" fill="url(#' + id + ')"/><path d="' + CLOTH + '" fill="url(#' + weave + ')"/>' +
+      '<path d="M7,7 L52,7 L7,52 Z" fill="#fff" opacity=".1"/><path d="M60,93 L93,60 L93,93 Z" fill="#000" opacity=".08"/><path d="M93,24 L93,36 L36,93 L24,93 Z" fill="#fff" opacity=".07"/></g></svg>';
   }
   /* The print as a colour for figure(): returns { c: 'url(#…)', defs } */
   function print(kind, c, s) { var id = nextId('pf'); return { c: 'url(#' + id + ')', defs: patDef(kind, c, id, s || 0.3) }; }
