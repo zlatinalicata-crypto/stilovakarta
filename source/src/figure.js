@@ -16,8 +16,11 @@ var Figure = (function () {
   var det = function (d, c, w) { return '<path d="' + d + '" fill="none" stroke="' + (c || INK) + '" stroke-width="' + (w || 0.5) + '" stroke-linecap="round" stroke-linejoin="round"/>'; };
   var limb = function (a, w, c) { return '<path d="' + pl(a) + '" fill="none" stroke="' + INK + '" stroke-linecap="round" stroke-linejoin="round" stroke-width="' + (w + 1.2).toFixed(1) + '"/><path d="' + pl(a) + '" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke="' + c + '" stroke-width="' + w + '"/>'; };
   var limbs = function (a, w, c) { return limb(a, w, c) + limb(mir(a), w, c); };
-  function shade(h, f) { var n = parseInt(h.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, t = f < 0 ? 0 : 255, p = Math.abs(f); r = Math.round(r + (t - r) * p); g = Math.round(g + (t - g) * p); b = Math.round(b + (t - b) * p); return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1); }
-  function lum(h) { var n = parseInt(h.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; }
+  /* colours may also be a print, url(#id): then shading leaves them as they are */
+  function isHex(h) { return /^#[0-9a-f]{6}$/i.test(h); }
+  function shade(h, f) { if (!isHex(h)) return h; var n = parseInt(h.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, t = f < 0 ? 0 : 255, p = Math.abs(f); r = Math.round(r + (t - r) * p); g = Math.round(g + (t - g) * p); b = Math.round(b + (t - b) * p); return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1); }
+  function lum(h) { if (!isHex(h)) return 0.5; var n = parseInt(h.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; }
+  function mix(h1, h2, t) { var a = parseInt(h1.slice(1), 16), b = parseInt(h2.slice(1), 16), m = function (s) { return Math.round(((a >> s) & 255) * (1 - t) + ((b >> s) & 255) * t); }; return '#' + ((1 << 24) | (m(16) << 16) | (m(8) << 8) | m(0)).toString(16).slice(1); }
   var lapel = function (c) { return lum(c) < 0.2 ? shade(c, 0.12) : shade(c, -0.12); };
 
   var LEG = [[46, 130], [47.5, 160], [48.8, 198], [48.5, 222], [51.8, 256], [56.6, 256], [57.6, 222], [57.6, 198], [59.4, 160], [59.8, 140], [59, 130]];
@@ -180,8 +183,82 @@ var Figure = (function () {
     if (o.ear) s += ears(o.ear, g);
     if (o.bag) s += bag(o.bag);
     male = false;
-    return '<svg viewBox="24 2 72 276" role="img" aria-label="' + esc(opt.label || '') + '" xmlns="http://www.w3.org/2000/svg">' + s + '</svg>';
+    return '<svg viewBox="24 2 72 276" role="img" aria-label="' + esc(opt.label || '') + '" xmlns="http://www.w3.org/2000/svg">' + (opt.defs ? '<defs>' + opt.defs + '</defs>' : '') + s + '</svg>';
   }
+
+  /* ---------- prints ----------
+     One <pattern> per kind, in three colours: c = [ground, motif, accent]. s scales it (the figure is small). */
+  var uid = 0;
+  function nextId(p) { uid += 1; return p + uid; }
+  function flower(cx, cy, r, col, mid) {
+    var s = '', i, an;
+    for (i = 0; i < 5; i++) { an = i * 1.2566 - 1.5708; s += '<ellipse cx="' + (cx + Math.cos(an) * r * 0.55).toFixed(2) + '" cy="' + (cy + Math.sin(an) * r * 0.55).toFixed(2) + '" rx="' + (r * 0.5).toFixed(2) + '" ry="' + (r * 0.36).toFixed(2) + '" transform="rotate(' + (i * 72 + 90) + ' ' + (cx + Math.cos(an) * r * 0.55).toFixed(2) + ' ' + (cy + Math.sin(an) * r * 0.55).toFixed(2) + ')" fill="' + col + '"/>'; }
+    return s + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r * 0.22).toFixed(2) + '" fill="' + mid + '"/>';
+  }
+  function leaf(cx, cy, rot, col, len) { len = len || 3.4; return '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + len + '" ry="' + (len * 0.42).toFixed(2) + '" transform="rotate(' + rot + ' ' + cx + ' ' + cy + ')" fill="' + col + '"/>'; }
+  function patDef(kind, c, id, s) {
+    var a = c[0], b = c[1], x = c[2] || c[1], w = 40, h = 40, body = '', i, j;
+    var tf = s && s !== 1 ? ' patternTransform="scale(' + s + ')"' : '';
+    var deep = lum(a) < 0.45, glow = shade(a, deep ? 0.16 : -0.12);
+    if (kind === 'geo') {
+      w = h = 64;
+      body = '<path d="M0,64 L0,18 A46,46 0 0 1 46,64 Z" fill="' + b + '"/><path d="M0,64 L0,38 A26,26 0 0 1 26,64 Z" fill="' + glow + '"/>' +
+        '<path d="M64,0 L64,34 L30,0 Z" fill="' + x + '"/><path d="M38,24 L64,50 L64,64 L52,64 L26,36 Z" fill="' + b + '" opacity=".38"/>' +
+        '<circle cx="16" cy="14" r="5" fill="' + x + '"/>';
+    } else if (kind === 'stripe') {
+      w = 36; h = 10;
+      body = '<rect width="14" height="10" fill="' + b + '"/><rect x="20" width="2.4" height="10" fill="' + x + '"/><rect x="25.5" width=".9" height="10" fill="' + b + '" opacity=".6"/>';
+    } else if (kind === 'fine') {
+      w = 7; h = 7;
+      body = '<rect x="3" width=".9" height="7" fill="' + b + '" opacity=".9"/>';
+    } else if (kind === 'check') {
+      w = h = 44;
+      body = '<rect width="16" height="44" fill="' + b + '" opacity=".42"/><rect width="44" height="16" fill="' + b + '" opacity=".42"/>' +
+        '<rect x="7.5" width="1" height="44" fill="' + shade(b, 0.45) + '" opacity=".7"/><rect y="7.5" width="44" height="1" fill="' + shade(b, 0.45) + '" opacity=".7"/>' +
+        '<rect x="28" width="2.2" height="44" fill="' + x + '" opacity=".9"/><rect y="28" width="44" height="2.2" fill="' + x + '" opacity=".9"/>' +
+        '<path d="M0,4 L4,0 M0,8 L8,0 M0,12 L12,0" stroke="' + (deep ? '#fff' : '#000') + '" stroke-width=".5" opacity=".08"/>';
+    } else if (kind === 'polka') {
+      w = h = 22;
+      body = '<circle cx="5.5" cy="5.5" r="3.4" fill="' + b + '"/><circle cx="16.5" cy="16.5" r="3.4" fill="' + b + '"/>';
+    } else if (kind === 'floral') {
+      w = h = 44;
+      var lf = mix(x, a, 0.25), mid = deep ? shade(a, 0.5) : a;
+      body = leaf(5, 17, 35, lf) + leaf(17, 4, -30, lf, 2.8) + leaf(36, 38, 30, lf) + leaf(25, 22, -40, lf, 2.6) + leaf(41, 13, 70, lf, 2.4) +
+        flower(10, 10, 6.4, b, mid) + flower(31, 30, 5.6, x, mid) + flower(33, 9, 3.6, b, mid) + flower(9, 34, 4, x, mid) + flower(22, 42, 2.6, b, mid) +
+        '<circle cx="22" cy="17" r=".9" fill="' + b + '"/><circle cx="42" cy="22" r=".9" fill="' + x + '"/><circle cx="18" cy="31" r=".9" fill="' + b + '"/>';
+    } else if (kind === 'blobs') {
+      w = 100; h = 132;
+      var fid = id + 'w';
+      body = '<filter id="' + fid + '" x="-30%" y="-30%" width="160%" height="160%"><feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="10"/><feGaussianBlur stdDeviation="1.4"/></filter>' +
+        '<g filter="url(#' + fid + ')">' + [[24, 26, 17, b, 0.55], [70, 20, 13, x, 0.5], [76, 70, 19, b, 0.42], [26, 82, 15, x, 0.45], [50, 48, 9, b, 0.35], [56, 110, 14, b, 0.5], [86, 112, 8, x, 0.4], [14, 120, 7, b, 0.35]].map(function (p) {
+          return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + p[2] + '" fill="' + p[3] + '" opacity="' + p[4] + '"/>';
+        }).join('') + '</g>';
+    }
+    return '<pattern id="' + id + '" width="' + w + '" height="' + h + '" patternUnits="userSpaceOnUse"' + tf + '><rect width="' + w + '" height="' + h + '" fill="' + a + '"/>' + body + '</pattern>';
+  }
+  /* A fabric sample with pinked (zigzag) edges, a soft sheen and a woven texture: the print in three colours. */
+  function pinked(x0, y0, x1, y1, t) {
+    var pts = [], i, n, x, y;
+    n = Math.round((x1 - x0) / (2 * t)); for (i = 0; i < n; i++) { x = x0 + (x1 - x0) * i / n; pts.push([x, y0], [x + (x1 - x0) / n / 2, y0 + t]); }
+    n = Math.round((y1 - y0) / (2 * t)); for (i = 0; i < n; i++) { y = y0 + (y1 - y0) * i / n; pts.push([x1, y], [x1 - t, y + (y1 - y0) / n / 2]); }
+    n = Math.round((x1 - x0) / (2 * t)); for (i = 0; i < n; i++) { x = x1 - (x1 - x0) * i / n; pts.push([x, y1], [x - (x1 - x0) / n / 2, y1 - t]); }
+    n = Math.round((y1 - y0) / (2 * t)); for (i = 0; i < n; i++) { y = y1 - (y1 - y0) * i / n; pts.push([x0, y], [x0 + t, y - (y1 - y0) / n / 2]); }
+    return 'M' + pts.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' L') + ' Z';
+  }
+  var CLOTH = pinked(6, 6, 94, 94, 1.6);
+  function fabric(kind, c) {
+    var id = nextId('pt'), sheen = id + 'f', weave = id + 'v';
+    var defs = patDef(kind, c, id, 1) +
+      '<linearGradient id="' + sheen + '" x1="0" y1="0" x2="1" y2="1">' + [[0, '#fff', 0.16], [0.35, '#fff', 0], [0.62, '#000', 0.05], [0.78, '#fff', 0.08], [1, '#000', 0.14]].map(function (st) {
+        return '<stop offset="' + st[0] + '" stop-color="' + st[1] + '" stop-opacity="' + st[2] + '"/>';
+      }).join('') + '</linearGradient>' +
+      '<pattern id="' + weave + '" width="2.4" height="2.4" patternUnits="userSpaceOnUse"><path d="M0,2.4 L2.4,0" stroke="#000" stroke-width=".35" opacity=".07"/></pattern>';
+    return '<svg viewBox="0 0 100 100" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>' + defs + '</defs><g transform="rotate(-2.5 50 50)">' +
+      '<path d="' + CLOTH + '" fill="#000" opacity=".12" transform="translate(1.6 2.4)"/>' +
+      '<path d="' + CLOTH + '" fill="url(#' + id + ')"/><path d="' + CLOTH + '" fill="url(#' + weave + ')"/><path d="' + CLOTH + '" fill="url(#' + sheen + ')"/></g></svg>';
+  }
+  /* The print as a colour for figure(): returns { c: 'url(#…)', defs } */
+  function print(kind, c, s) { var id = nextId('pf'); return { c: 'url(#' + id + ')', defs: patDef(kind, c, id, s || 0.3) }; }
 
   /* pattern tile, 60x60, in two colours */
   function tile(kind, a, b) {
@@ -200,6 +277,6 @@ var Figure = (function () {
     else if (kind === 'blobs') [[14, 16, 13], [42, 12, 10], [50, 40, 14], [20, 46, 12], [32, 30, 8]].forEach(function (p) { s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + p[2] + '" fill="' + b + '" opacity=".45"/>'; });
     return '<svg viewBox="0 0 60 60" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">' + s + '</svg>';
   }
-  return { figure: figure, tile: tile, shade: shade };
+  return { figure: figure, tile: tile, fabric: fabric, print: print, shade: shade, mix: mix };
 })();
 if (typeof module !== 'undefined') module.exports = Figure;
