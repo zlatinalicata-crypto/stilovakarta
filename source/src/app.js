@@ -403,14 +403,18 @@
   });
   function word(x, lo, mid, hi) { return x < -0.3 ? lo : x > 0.3 ? hi : mid; }
   function linHex(r) { return '#' + r.map(function (v) { v = Math.max(0, Math.min(1, v)); v = v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055; return ('0' + Math.round(v * 255).toString(16)).slice(-2); }).join(''); }
+  /* photo: lightness, depth and contrast; the two questions: undertone, which phone cameras shift */
+  var TONE_Q = [0, 1];
   function photoSeason() {
     var ph = st.season.photo;
     if (!ph || !ph.skin || !ph.eye || !ph.hair) return null;
-    var p = P.photoScores(ph), q = P.quizScores(st.season.quiz, [0, 1, 5]);
+    if (st.season.quiz[0] == null || st.season.quiz[1] == null) return null;
+    var p = P.photoScores(ph), q = P.quizScores(st.season.quiz, TONE_Q);
     var r = P.seasonFromScores(p.u + q.u, p.d + q.d, p.c + q.c); r.p = p; return r;
   }
   function applyPhotoSeason() {
-    var r = photoSeason(); if (!r) return;
+    var r = photoSeason();
+    if (!r) { if (st.season.src === 'photo' && !st.season.ai) { st.season.value = null; st.season.sub = null; } return; }
     st.season.value = r.season; st.season.sub = I18N.inBg(function () { return D.SEASONS[r.season].subtypes[r.sub] || null; }); st.season.src = 'photo'; mem.cacheKey = null;
   }
   function toLin(c) { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
@@ -462,7 +466,7 @@
     }).join('');
     var panel = '';
     if (tab === 'photo') {
-      var ai = s.ai, ph = s.photo || {}, pr = photoSeason();
+      var ai = s.ai, ph = s.photo || {}, pr = photoSeason(), pm = ph.skin && ph.eye && ph.hair ? P.photoScores(ph) : null;
       var tg = [['skin', T('Кожа')], ['eye', T('Очи')], ['hair', T('Коса')], ['white', T('Бяло (по желание)')]];
       panel = T('<ul class="tips"><li>Дневна светлина до прозорец, без пряко слънце, без грим и филтър.</li><li>Бял лист или бяла дреха в кадъра помагат: приложението коригира по тях светлината.</li></ul>') +
         '<div class="row"><label class="btn filebtn" for="photo">' + (mem.work ? T('Друга снимка') : T('Избери снимка')) + '<input type="file" id="photo" accept="image/*"></label>' +
@@ -472,12 +476,14 @@
         }).join('') + '</div><p class="small" id="ptip">' + TIP[mem.target] + T('</p><canvas id="pcv" class="pcv" aria-label="Снимката. Докосни я, за да измериш цвят."></canvas>') : '') +
         (mem.status ? '<p class="status" role="status">' + esc(mem.status) + '</p>' : '') +
         (ph.skin || ph.eye || ph.hair ? '<div class="dots">' + tg.filter(function (t) { return ph[t[0]]; }).map(function (t) { return '<span><i style="background:' + linHex(ph[t[0]]) + '"></i>' + t[1].replace(T(' (по желание)'), '') + '</span>'; }).join('') + '</div>' : '') +
-        '<div class="qlist">' + [0, 1, 5].map(function (i) {
-          var q = D.SEASON_Q[i];
-          return '<div class="q"><p>' + gx(q.q) + '</p><div class="chips">' + q.a.map(function (a, j) { return '<button class="chip" data-act="sq" data-i="' + i + '" data-j="' + j + '" aria-pressed="' + (s.quiz[i] === j) + '">' + gx(a[0]) + '</button>'; }).join('') + '</div></div>';
-        }).join('') + '</div>' +
-        (pr ? T('<div class="card"><p class="eyebrow">Измерено на снимката</p><p class="small">Подтон ') + word(pr.u, T('студен'), T('неутрален'), T('топъл')) + T(' · светлота ') + word(pr.p.d, T('светла'), T('средна'), T('дълбока')) + T(' · контраст ') + (pr.p.contrast > 40 ? T('висок') : pr.p.contrast < 22 ? T('нисък') : T('среден')) + T(' · наситеност ') + word(pr.p.c, T('мека'), T('средна'), T('ярка')) + (pr.p.wb ? T(' · светлината е коригирана по бялото') : '') + '</p>' +
-          (s.quiz[0] == null && s.quiz[1] == null ? T('<p class="small">Подтонът се чете трудно от снимка. Отговорите на въпросите по-горе го уточняват.</p>') : '') + '</div>' : (mem.work ? '' : T('<p class="status">Избери снимка, после докосни кожата, окото и косата.</p>'))) +
+        (pm ? T('<div class="card"><p class="eyebrow">Измерено на снимката</p><p class="small">Светлота ') + word(pm.d, T('светла'), T('средна'), T('дълбока')) + T(' · контраст ') + (pm.contrast > 40 ? T('висок') : pm.contrast < 22 ? T('нисък') : T('среден')) + T(' · наситеност ') + word(pm.c, T('мека'), T('средна'), T('ярка')) + (pm.wb ? T(' · подтон ') + word(pm.u, T('студен'), T('неутрален'), T('топъл')) + T(' (светлината е коригирана по бялото)') : '') + '</p></div>' +
+          T('<div class="q-intro"><p class="eyebrow">Подтонът: два въпроса</p><p class="small">Камерата на телефона променя топлината на кожата, затова подтонът (топъл или студен) се уточнява с два въпроса. Светлотата и контрастът идват от снимката.</p></div>') +
+          '<div class="qlist">' + TONE_Q.map(function (i) {
+            var q = D.SEASON_Q[i];
+            return '<div class="q"><p>' + gx(q.q) + '</p><div class="chips">' + q.a.map(function (a, j) { return '<button class="chip" data-act="sq" data-i="' + i + '" data-j="' + j + '" aria-pressed="' + (s.quiz[i] === j) + '">' + gx(a[0]) + '</button>'; }).join('') + '</div></div>';
+          }).join('') + '</div>' +
+          (pr ? '' : T('<p class="status">Отговори на двата въпроса и ще видиш сезона си.</p>'))
+        : (mem.work ? '' : T('<p class="status">Избери снимка, после докосни кожата, окото и косата.</p>'))) +
         (ai ? T('<div class="card"><p class="eyebrow">Анализ от Claude</p><p><b>') + esc(ai.subtype || D.SEASONS[ai.season].name) + '</b>' + (ai.second && ai.second !== ai.season && D.SEASONS[ai.second] ? T(' · близо до ') + D.SEASONS[ai.second].the : '') + '</p>' +
           (ai.notes ? '<p>' + esc(ai.notes) + '</p>' : '') + (ai.photoNote ? '<p class="small">' + esc(ai.photoNote) + '</p>' : '') +
           '<button class="link" data-act="spick" data-v="' + ai.season + T('">Избери този сезон</button></div>') : '') +
@@ -496,7 +502,7 @@
         return '<button class="sbtn" data-act="spick" data-v="' + k + '" aria-pressed="' + (s.value === k) + '"><span class="bar">' + seasonStrip(k, 6) + '</span><b>' + S.name + '</b><small>' + S.traits + '</small></button>';
       }).join('') + '</div>';
     }
-    var res = s.value ? T('<div class="card hl"><p class="eyebrow">Твоят сезон</p><h2 class="h-m">') + esc(T(s.sub) || D.SEASONS[s.value].name) + '</h2><p class="small">' + D.SEASONS[s.value].traits + ' ' + ({ photo: T('Определен по снимка.'), quiz: T('Определен по въпросите.'), pick: T('Избран от теб.') }[s.src] || '') + '</p>' +
+    var res = s.value ? T('<div class="card hl"><p class="eyebrow">Твоят сезон</p><h2 class="h-m">') + esc(T(s.sub) || D.SEASONS[s.value].name) + '</h2><p class="small">' + D.SEASONS[s.value].traits + ' ' + ({ photo: s.ai ? T('Определен по снимка.') : T('Определен по снимката и по отговорите за подтона.'), quiz: T('Определен по въпросите.'), pick: T('Избран от теб.') }[s.src] || '') + '</p>' +
       T('<div class="row"><button class="btn primary" data-act="go" data-v="line">Продължи</button>') + (s.src !== 'pick' ? T('<button class="link" data-act="stab" data-v="pick">Избери друг сезон</button>') : '') + '</div></div>' : '';
     return '<div class="screen">' + top() + head(2, T('Цветови сезон'), T('Сезонът описва какво носят лицето, кожата и очите. Той е рамката на палитрата.')) +
       '<div class="panel"><div class="tabs" role="tablist">' + tabs + '</div>' + panel + '</div>' + res + '</div>';

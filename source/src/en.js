@@ -1,5 +1,11 @@
 /* English texts, keyed by the Bulgarian source text. Generated from the translation batches. */
-var EN_DICT = {"Метал и камъни, подбрани по елементите ти":"Metal and stones chosen by your elements",
+var EN_DICT = {"<div class=\"card\"><p class=\"eyebrow\">Измерено на снимката</p><p class=\"small\">Светлота ":"<div class=\"card\"><p class=\"eyebrow\">Measured on the photo</p><p class=\"small\">Lightness ",
+" · подтон ":" · undertone ",
+" (светлината е коригирана по бялото)":" (light corrected by the white)",
+"<div class=\"q-intro\"><p class=\"eyebrow\">Подтонът: два въпроса</p><p class=\"small\">Камерата на телефона променя топлината на кожата, затова подтонът (топъл или студен) се уточнява с два въпроса. Светлотата и контрастът идват от снимката.</p></div>":"<div class=\"q-intro\"><p class=\"eyebrow\">Undertone: two questions</p><p class=\"small\">Phone cameras shift how warm skin looks, so the undertone (warm or cool) is set with two questions. Lightness and contrast come from the photo.</p></div>",
+"<p class=\"status\">Отговори на двата въпроса и ще видиш сезона си.</p>":"<p class=\"status\">Answer the two questions to see your season.</p>",
+"Определен по снимката и по отговорите за подтона.":"Set by the photo and your undertone answers.",
+"Метал и камъни, подбрани по елементите ти":"Metal and stones chosen by your elements",
 "Твоят метал и камъни":"Your metal and stones",
 "Кой метал и кои камъни озаряват лицето ти и кои цветове те уморяват":"Which metal and stones light up your face and which colours tire you",
 "Камъните са подбрани по благоприятните ти елементи и по подтона на сезона.":"The stones are chosen by your favourable elements and the undertone of your season.",
