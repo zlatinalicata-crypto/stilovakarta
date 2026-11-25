@@ -970,7 +970,11 @@
       save();
     }
     if (qs.get('cancelled') && !qs.get('gift')) { st.view = 'result'; mem.payNote = T('Плащането е прекъснато. Можеш да опиташ отново.'); }
-    if (['session_id', 'cancelled', 'gift', 'gift_session', 'code', 'duo'].some(function (k) { return qs.has(k); })) history.replaceState(null, '', location.pathname);
+    /* tidy the address, but keep utm_* so the statistics still see where the visit came from */
+    if (['session_id', 'cancelled', 'gift', 'gift_session', 'code', 'duo'].some(function (k) { return qs.has(k); })) {
+      var keepQs = new URLSearchParams(); qs.forEach(function (val, k) { if (/^utm_/.test(k)) keepQs.set(k, val); });
+      history.replaceState(null, '', location.pathname + (keepQs.toString() ? '?' + keepQs.toString() : ''));
+    }
   } catch (e) { }
   render();
 })();
