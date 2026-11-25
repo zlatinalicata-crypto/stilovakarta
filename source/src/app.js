@@ -83,6 +83,26 @@
   function canGo(v) { if (!st.sex) return false; var i = ORDER.indexOf(v); if (v === 'result') i = 4; for (var k = 0; k < i; k++) if (!done[ORDER[k]]()) return false; return true; }
   function go(v) { st.view = v; save(); render(); try { window.scrollTo(0, 0); } catch (e) { } }
 
+  /* ---------- statistics ----------
+     Anonymous, cookie-free counts in Umami, only when the page loads its script: which steps people reach,
+     where they stop, how many pay. Never birth data, names, wishes or codes themselves. */
+  var tracked = {}, trackQueue = [];
+  var STEP_EVENT = { start: 'test-start', birth: 'step-birth', season: 'step-season', line: 'step-line', arch: 'step-arch', gift: 'gift-page' };
+  function sendTrack(n, d) { try { if (d) window.umami.track(n, d); else window.umami.track(n); } catch (e) { } }
+  function track(name, data, once) {
+    if (once) { if (tracked[name]) return; tracked[name] = 1; }
+    if (window.umami && typeof window.umami.track === 'function') sendTrack(name, data);
+    else if (trackQueue.length < 30) trackQueue.push([name, data]);
+  }
+  window.addEventListener('load', function () {
+    var n = 0, t = setInterval(function () {
+      if (window.umami && typeof window.umami.track === 'function') { clearInterval(t); trackQueue.splice(0).forEach(function (x) { sendTrack(x[0], x[1]); }); }
+      else if (++n > 40) { clearInterval(t); trackQueue = []; }
+    }, 250);
+  });
+  /* leave for Stripe a moment after the event, so the count is not lost with the page */
+  function leaveTo(url) { setTimeout(function () { location.href = url; }, window.umami ? 160 : 0); }
+
   /* ---------- shared bits ---------- */
   function top() {
     var cur = ORDER.indexOf(st.view);
@@ -585,7 +605,7 @@
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (x) {
         mem.codeBusy = false;
-        if (x.ok && (x.j.free || x.j.pct || x.j.duo)) { mem.code = { code: v, free: !!x.j.free, gift: !!x.j.gift, duo: !!x.j.duo, pct: x.j.pct, cents: x.j.cents }; mem.codeOpen = false; mem.payNote = ''; }
+        if (x.ok && (x.j.free || x.j.pct || x.j.duo)) { mem.code = { code: v, free: !!x.j.free, gift: !!x.j.gift, duo: !!x.j.duo, pct: x.j.pct, cents: x.j.cents }; mem.codeOpen = false; mem.payNote = ''; track('code', { type: x.j.gift ? 'gift' : x.j.free ? 'free' : x.j.duo ? 'duo' : 'discount' }); }
         else mem.codeErr = x.j.error || T('Този код не е валиден. Провери как е изписан.');
         render();
       })
@@ -615,6 +635,8 @@
     var R = loadReport(), out = '<div class="screen">' + top();
     if (R.loading) return out + T('<p class="status" role="status">Подготвям резултата…</p></div>');
     if (R.error) return out + '<p class="err" role="alert">' + esc(R.error) + T('</p><div class="row"><button class="btn" data-act="retry">Опитай отново</button><button class="link" data-act="go" data-v="birth">Промени данните</button></div></div>');
+    if (R.full && R.paid) { track('result-full', null, true); if (mem.fromStripe) track('purchase', { type: st.duo ? 'duo' : 'card' }, true); }
+    else if (R.teaser) track('result-preview', null, true);
     if (R.full) {
       if (!R.paid) out += T('<p class="banner">Тестов режим: така изглежда пълният резултат след плащане. <button class="link" data-act="unpreview">Обратно към прегледа</button></p>');
       /* bought with a duo code: the gift card waits one tap away */
@@ -659,8 +681,8 @@
     fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: inputOf(), consent: true, lang: I18N.lang, code: mem.code ? mem.code.code : null, duoGift: mem.code && mem.code.duo ? st.gift : null }) })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (x) {
-        if (x.ok && x.j.url) { save(); location.href = x.j.url; return; }
-        if (x.ok && x.j.session) { st.session = x.j.session; st.pendingCode = null; mem.paying = false; mem.code = null; mem.rep = null; save(); render(); try { window.scrollTo(0, 0); } catch (er) { } return; }
+        if (x.ok && x.j.url) { track('checkout', { type: mem.code ? (mem.code.duo ? 'duo' : 'discount') : 'card' }); save(); leaveTo(x.j.url); return; }
+        if (x.ok && x.j.session) { track('unlock-code', null, true); st.session = x.j.session; st.pendingCode = null; mem.paying = false; mem.code = null; mem.rep = null; save(); render(); try { window.scrollTo(0, 0); } catch (er) { } return; }
         if (x.j.badCode) mem.code = null;
         mem.paying = false; mem.payNote = x.j.error || T('Плащането не можа да започне. Опитай отново.'); render();
       })
@@ -711,7 +733,7 @@
     fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gift: st.gift, consent: true, lang: I18N.lang, code: c }) })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (x) {
-        if (x.ok && x.j.url) { save(); location.href = x.j.url; return; }
+        if (x.ok && x.j.url) { track('gift-checkout'); save(); leaveTo(x.j.url); return; }
         if (x.j.badCode) mem.code = null;
         mem.paying = false; mem.giftNote = x.j.error || T('Плащането не можа да започне. Опитай отново.'); render();
       })
@@ -726,6 +748,7 @@
       .then(function (x) {
         if (!mem.gc || mem.gc.key !== key) return;
         mem.gc = x.ok && x.j.code ? Object.assign({ key: key }, x.j) : { key: key, error: x.j.error || T('Нещо се обърка. Опитай отново.') };
+        if (mem.gc.code && mem.fromGiftStripe) track('gift-purchase', null, true);
         if (st.view === 'giftcard') render();
       })
       .catch(function () {
@@ -797,7 +820,7 @@
     mem.cfBusy = true; mem.cfErr = ''; keep();
     var body = new URLSearchParams({ 'form-name': 'kontakt', name: f.name || '', email: f.email || '', message: f.msg || '', 'bot-field': hp ? hp.value : '' }).toString();
     fetch('/__forms.html', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body })
-      .then(function (r) { if (!r.ok) throw new Error('form ' + r.status); mem.cfBusy = false; mem.cfSent = true; mem.cf = null; keep(); })
+      .then(function (r) { if (!r.ok) throw new Error('form ' + r.status); mem.cfBusy = false; mem.cfSent = true; mem.cf = null; track('contact'); keep(); })
       .catch(function () { mem.cfBusy = false; mem.cfErr = T('Съобщението не се изпрати. Опитай отново или ни пиши на ') + CONTACT.mail + '.'; keep(); });
   }
   /* ---------- render ---------- */
@@ -807,6 +830,7 @@
     var vw = st.view;
     if (vw === 'giftcard' && !st.giftSession) vw = st.view = 'intro';
     if (vw !== 'intro' && vw !== 'start' && vw !== 'gift' && vw !== 'giftcard' && !canGo(vw)) vw = st.view = 'intro';
+    if (vw !== mem.lastView) { mem.lastView = vw; if (STEP_EVENT[vw]) track(STEP_EVENT[vw], null, true); }
     app.innerHTML = vw === 'gift' ? viewGift() : vw === 'giftcard' ? viewGiftCard() : vw === 'birth' ? viewBirth() : vw === 'season' ? viewSeason() : vw === 'line' ? viewLine() : vw === 'arch' ? viewArch() : vw === 'result' ? viewResult() : vw === 'start' ? viewStart() : viewIntro();
     if (vw === 'intro') stickSetup();
     var qh = document.getElementById('qh'); if (qh) qh.focus({ preventScroll: true });
@@ -843,7 +867,7 @@
     else if (a === 'preview') { mem.preview = true; render(); try { window.scrollTo(0, 0); } catch (er) { } }
     else if (a === 'unpreview') { mem.preview = false; render(); try { window.scrollTo(0, 0); } catch (er) { } }
     else if (a === 'tostart') go('start');
-    else if (a === 'lang') { st.lang = I18N.lang === 'en' ? 'bg' : 'en'; save(); var yl = window.scrollY; render(); try { window.scrollTo(0, yl); } catch (er) { } }
+    else if (a === 'lang') { st.lang = I18N.lang === 'en' ? 'bg' : 'en'; track('lang', { to: st.lang }); save(); var yl = window.scrollY; render(); try { window.scrollTo(0, yl); } catch (er) { } }
     else if (a === 'analyse') analyse();
     else if (a === 'ptarget') { mem.target = val; var y2 = window.scrollY; render(); try { window.scrollTo(0, y2); } catch (er) { } }
     else if (a === 'sq') {
@@ -883,9 +907,9 @@
     else if (a === 'aknow') { st.arch.pick = true; save(); render(); }
     else if (a === 'aredo') { st.arch = fresh().arch; save(); render(); }
     else if (a === 'goto') { var el = document.getElementById(b.dataset.id); if (el && el.tagName === 'DETAILS') el.open = true; if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }
-    else if (a === 'pdf') savePdf();
+    else if (a === 'pdf') { track('pdf'); savePdf(); }
     else if (a === 'copy') {
-      var txt = mem.rep && mem.rep.full ? mem.rep.full.text : '';
+      var txt = mem.rep && mem.rep.full ? mem.rep.full.text : ''; track('copy');
       var ok = function () { mem.toast = T('Копирано. Можеш да го поставиш в бележка или съобщение.'); render(); var d = document.getElementById('data'); if (d) d.scrollIntoView(); };
       try { navigator.clipboard.writeText(txt).then(ok, function () { mem.toast = T('Браузърът не позволи копиране.'); render(); }); } catch (er) { mem.toast = T('Браузърът не позволи копиране.'); render(); }
     }
@@ -937,16 +961,20 @@
     var qs = new URLSearchParams(location.search);
     /* ?code=… comes from a gift link: the code waits on the result. ?gift opens the gift page, ?gift_session the bought card. */
     if (qs.get('code')) { st.pendingCode = qs.get('code').slice(0, 40); save(); }
-    if (qs.get('gift_session')) { st.giftSession = qs.get('gift_session'); st.view = 'giftcard'; save(); }
+    if (qs.get('gift_session')) { st.giftSession = qs.get('gift_session'); st.view = 'giftcard'; mem.fromGiftStripe = true; save(); }
     else if (qs.get('gift')) { st.view = 'gift'; save(); if (qs.get('cancelled')) mem.giftNote = T('Плащането е прекъснато. Можеш да опиташ отново.'); }
     if (qs.get('session_id')) {
-      st.session = qs.get('session_id'); st.view = 'result';
+      st.session = qs.get('session_id'); st.view = 'result'; mem.fromStripe = true;
       /* ?duo: the payment also bought a gift card; on the live site its session is the same one ("1") */
       if (qs.get('duo')) { st.duo = qs.get('duo') === '1' ? st.session : qs.get('duo').slice(0, 200); st.gift = fresh().gift; }
       save();
     }
     if (qs.get('cancelled') && !qs.get('gift')) { st.view = 'result'; mem.payNote = T('Плащането е прекъснато. Можеш да опиташ отново.'); }
-    if (['session_id', 'cancelled', 'gift', 'gift_session', 'code', 'duo'].some(function (k) { return qs.has(k); })) history.replaceState(null, '', location.pathname);
+    /* tidy the address, but keep utm_* so the statistics still see where the visit came from */
+    if (['session_id', 'cancelled', 'gift', 'gift_session', 'code', 'duo'].some(function (k) { return qs.has(k); })) {
+      var keepQs = new URLSearchParams(); qs.forEach(function (val, k) { if (/^utm_/.test(k)) keepQs.set(k, val); });
+      history.replaceState(null, '', location.pathname + (keepQs.toString() ? '?' + keepQs.toString() : ''));
+    }
   } catch (e) { }
   render();
 })();
