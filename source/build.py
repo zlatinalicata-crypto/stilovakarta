@@ -55,7 +55,7 @@ for fam, pkg, weights in [('Prata', 'prata', [400]), ('Onest', 'onest', [400, 50
 
 # Anonymous, cookie-free visit statistics (Umami Cloud, EU region). Empty id = no script on the site.
 UMAMI_SRC = 'https://cloud.umami.is/script.js'
-UMAMI_ID = ''
+UMAMI_ID = '46c0f350-aaed-4c7b-bf28-3080e6e04256'
 umami_tag = ('<script defer src="%s" data-website-id="%s" data-domains="stilovakarta.com,www.stilovakarta.com"></script>\n' % (UMAMI_SRC, UMAMI_ID)) if UMAMI_ID else ''
 head = umami_tag + '''<meta name="theme-color" content="#16131A">
 <meta name="description" content="Лична палитра от цветовия сезон, линията на тялото, стиловия архетип и рождената карта.">
